@@ -23,6 +23,7 @@ ENTITY_DESCRIPTIONS = (
         name=elem.name,
         device_class=elem.device_class,
         entity_registry_enabled_default=elem.start_enabled,
+        icon=elem.icon,
     )
     for elem in switches
 )

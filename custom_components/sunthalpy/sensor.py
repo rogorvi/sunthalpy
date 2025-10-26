@@ -27,6 +27,7 @@ ENTITY_DESCRIPTIONS = (
         device_class=elem.device_class,
         native_unit_of_measurement=elem.unit,
         entity_registry_enabled_default=elem.start_enabled,
+        icon=elem.icon,
     )
     for elem in sensors
 )

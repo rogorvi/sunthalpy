@@ -46,6 +46,7 @@ class SunthalDataPoint:
     default_value = None
     current_value = None
     start_enabled: bool = True
+    icon: str | None = None
 
 
 @dataclass
@@ -86,12 +87,14 @@ switches = (
         uuid_name="user_sets",
         name="Modo Invierno",
         address="0100",
+        icon="mdi:snowflake",
     ),
     SwitchSunthalDataPoint(
         device_class=SwitchDeviceClass.SWITCH,
         uuid_name="user_sets",
         name="En casa",
         address="0000",
+        icon="mdi:home-account",
     ),
 )
 

@@ -27,6 +27,7 @@ ENTITY_DESCRIPTIONS = (
         native_unit_of_measurement=elem.unit,
         mode=elem.mode,
         entity_registry_enabled_default=elem.start_enabled,
+        icon=elem.icon,
     )
     for elem in numbers
 )
