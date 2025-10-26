@@ -1,4 +1,4 @@
-"""Sample API Client."""
+"""Sample API Client."""  # noqa: EXE002
 
 from __future__ import annotations
 
@@ -7,6 +7,8 @@ from typing import Any
 
 import aiohttp
 import async_timeout
+
+from . import const as cnt
 
 
 class IntegrationBlueprintApiClientError(Exception):
@@ -48,21 +50,72 @@ class IntegrationBlueprintApiClient:
         self._username = username
         self._password = password
         self._session = session
+        self._session.connector._ssl = False  # type: ignore # Disable SSL verification  # noqa: PGH003, SLF001
+
+    async def _get_token(self) -> str:
+        """Get token from the API."""
+        token_data = await self._api_wrapper(
+            method="post",
+            url=f"{cnt.BASE_URL}/login",
+            data={"email": self._username, "pass": self._password},
+            headers=cnt.HEADERS,
+        )
+        return token_data["obj"]["token"]
 
     async def async_get_data(self) -> Any:
         """Get data from the API."""
+        # Get data
+        data_headers = cnt.HEADERS.copy()
+        data_headers["auth"] = await self._get_token()
+        return {
+            uuid_name: await self._api_wrapper(
+                method="post",
+                url=f"{cnt.BASE_URL}/get/device-data/last",
+                data={"uuid": uuid},
+                headers=data_headers,
+            )
+            for uuid_name, uuid in cnt.UUIDS.items()
+        }
+
+    async def _switch(self, uuid: str, address: str, *, set_to: bool) -> Any:
+        """Get data from the API."""
+        # Set switch status
+        data_headers = cnt.HEADERS.copy()
+        data_headers["auth"] = await self._get_token()
         return await self._api_wrapper(
-            method="get",
-            url="https://jsonplaceholder.typicode.com/posts/1",
+            method="post",
+            url=f"{cnt.BASE_URL}/send/device/command",
+            data={
+                "uuid": cnt.UUIDS[uuid],
+                "value": set_to,
+                "deviceInternalAddress": address,
+            },
+            headers=data_headers,
         )
 
-    async def async_set_title(self, value: str) -> Any:
-        """Get data from the API."""
+    async def async_switch_on(self, uuid: str, address: str) -> Any:
+        """Turn on the switch."""
+        return await self._switch(uuid, address, set_to=True)
+
+    async def async_switch_off(self, uuid: str, address: str) -> Any:
+        """Turn off the switch."""
+        return await self._switch(uuid, address, set_to=False)
+
+    async def async_update_number(self, uuid: str, address: str, value: float) -> Any:
+        """Turn off the switch."""
+        # Set switch status
+        data_headers = cnt.HEADERS.copy()
+        data_headers["auth"] = await self._get_token()
+        data = {
+            "uuid": cnt.UUIDS[uuid],
+            "value": round(value, 1),
+            "deviceInternalAddress": address,
+        }
         return await self._api_wrapper(
-            method="patch",
-            url="https://jsonplaceholder.typicode.com/posts/1",
-            data={"title": value},
-            headers={"Content-type": "application/json; charset=UTF-8"},
+            method="post",
+            url=f"{cnt.BASE_URL}/send/device/command",
+            data=data,
+            headers=data_headers,
         )
 
     async def _api_wrapper(

@@ -1,26 +1,34 @@
-"""Sensor platform for integration_blueprint."""
+"""Sensor platform for sunthalpy."""  # noqa: EXE002
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorEntityDescription,
+)
 
 from .entity import IntegrationBlueprintEntity
+from .sunthalhome import sensors
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
+    from uv import Any
 
     from .coordinator import BlueprintDataUpdateCoordinator
     from .data import IntegrationBlueprintConfigEntry
 
 ENTITY_DESCRIPTIONS = (
     SensorEntityDescription(
-        key="integration_blueprint",
-        name="Integration Sensor",
-        icon="mdi:format-quote-close",
-    ),
+        key=f"{elem.uuid_name}--{elem.address}",
+        name=elem.name,
+        device_class=elem.device_class,
+        native_unit_of_measurement=elem.unit,
+        entity_registry_enabled_default=elem.start_enabled,
+    )
+    for elem in sensors
 )
 
 
@@ -40,7 +48,7 @@ async def async_setup_entry(
 
 
 class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
-    """integration_blueprint Sensor class."""
+    """sunthalpy Sensor class."""
 
     def __init__(
         self,
@@ -48,10 +56,19 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
         entity_description: SensorEntityDescription,
     ) -> None:
         """Initialize the sensor class."""
-        super().__init__(coordinator)
+        super().__init__(coordinator, entity_description.key)
         self.entity_description = entity_description
 
     @property
-    def native_value(self) -> str | None:
+    def native_value(self) -> Any:
         """Return the native value of the sensor."""
-        return self.coordinator.data.get("body")
+        uuid, address = self.entity_description.key.split("--")
+        data = self.coordinator.data.get(uuid, {})
+        return (
+            data.get("obj", {})
+            .get("lastMeasure", {})
+            .get(
+                address,
+                None,
+            )
+        )

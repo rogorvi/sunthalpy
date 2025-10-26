@@ -1,12 +1,14 @@
-"""Switch platform for integration_blueprint."""
+"""Switch platform for integration_blueprint."""  # noqa: EXE002
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
+from homeassistant.helpers.event import async_call_later
 
 from .entity import IntegrationBlueprintEntity
+from .sunthalhome import switches
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -17,10 +19,12 @@ if TYPE_CHECKING:
 
 ENTITY_DESCRIPTIONS = (
     SwitchEntityDescription(
-        key="integration_blueprint",
-        name="Integration Switch",
-        icon="mdi:format-quote-close",
-    ),
+        key=f"{elem.uuid_name}--{elem.address}",
+        name=elem.name,
+        device_class=elem.device_class,
+        entity_registry_enabled_default=elem.start_enabled,
+    )
+    for elem in switches
 )
 
 
@@ -48,20 +52,39 @@ class IntegrationBlueprintSwitch(IntegrationBlueprintEntity, SwitchEntity):
         entity_description: SwitchEntityDescription,
     ) -> None:
         """Initialize the switch class."""
-        super().__init__(coordinator)
+        super().__init__(coordinator, entity_description.key)
         self.entity_description = entity_description
 
     @property
     def is_on(self) -> bool:
-        """Return true if the switch is on."""
-        return self.coordinator.data.get("title", "") == "foo"
+        """Return the native value of the sensor."""
+        uuid, address = self.entity_description.key.split("--")
+        data = self.coordinator.data.get(uuid, {})
+        return (
+            data.get("obj", {})
+            .get("lastMeasure", {})
+            .get(
+                address,
+                None,
+            )
+        )
 
     async def async_turn_on(self, **_: Any) -> None:
         """Turn on the switch."""
-        await self.coordinator.config_entry.runtime_data.client.async_set_title("bar")
-        await self.coordinator.async_request_refresh()
+        uuid, address = self.entity_description.key.split("--")
+        await self.coordinator.config_entry.runtime_data.client.async_switch_on(
+            uuid, address
+        )
+        async_call_later(self.hass, 5, self._scheduled_refresh)
 
     async def async_turn_off(self, **_: Any) -> None:
         """Turn off the switch."""
-        await self.coordinator.config_entry.runtime_data.client.async_set_title("foo")
+        uuid, address = self.entity_description.key.split("--")
+        await self.coordinator.config_entry.runtime_data.client.async_switch_off(
+            uuid, address
+        )
+        async_call_later(self.hass, 5, self._scheduled_refresh)
+
+    async def _scheduled_refresh(self, _now=None) -> None:  # noqa: ANN001
+        """Handle scheduled refresh."""
         await self.coordinator.async_request_refresh()

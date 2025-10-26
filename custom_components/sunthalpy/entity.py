@@ -1,4 +1,4 @@
-"""BlueprintEntity class."""
+"""BlueprintEntity class."""  # noqa: EXE002
 
 from __future__ import annotations
 
@@ -14,10 +14,12 @@ class IntegrationBlueprintEntity(CoordinatorEntity[BlueprintDataUpdateCoordinato
 
     _attr_attribution = ATTRIBUTION
 
-    def __init__(self, coordinator: BlueprintDataUpdateCoordinator) -> None:
+    def __init__(
+        self, coordinator: BlueprintDataUpdateCoordinator, key: str = ""
+    ) -> None:
         """Initialize."""
         super().__init__(coordinator)
-        self._attr_unique_id = coordinator.config_entry.entry_id
+        self._attr_unique_id = coordinator.config_entry.entry_id + key
         self._attr_device_info = DeviceInfo(
             identifiers={
                 (
@@ -25,4 +27,8 @@ class IntegrationBlueprintEntity(CoordinatorEntity[BlueprintDataUpdateCoordinato
                     coordinator.config_entry.entry_id,
                 ),
             },
+        )
+        # Link to main device
+        self._attr_device_info = DeviceInfo(
+            connections={("email", coordinator.config_entry.data.get("username", ""))},
         )

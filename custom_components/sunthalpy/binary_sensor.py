@@ -1,16 +1,16 @@
-"""Binary sensor platform for integration_blueprint."""
+"""Binary sensor platform for integration_blueprint."""  # noqa: EXE002
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
 
 from .entity import IntegrationBlueprintEntity
+from .sunthalhome import binary_sensors
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -21,10 +21,12 @@ if TYPE_CHECKING:
 
 ENTITY_DESCRIPTIONS = (
     BinarySensorEntityDescription(
-        key="integration_blueprint",
-        name="Integration Blueprint Binary Sensor",
-        device_class=BinarySensorDeviceClass.CONNECTIVITY,
-    ),
+        key=f"{elem.uuid_name}--{elem.address}",
+        name=elem.name,
+        device_class=elem.device_class,
+        entity_registry_enabled_default=elem.start_enabled,
+    )
+    for elem in binary_sensors
 )
 
 
@@ -52,10 +54,19 @@ class IntegrationBlueprintBinarySensor(IntegrationBlueprintEntity, BinarySensorE
         entity_description: BinarySensorEntityDescription,
     ) -> None:
         """Initialize the binary_sensor class."""
-        super().__init__(coordinator)
+        super().__init__(coordinator, entity_description.key)
         self.entity_description = entity_description
 
     @property
     def is_on(self) -> bool:
-        """Return true if the binary_sensor is on."""
-        return self.coordinator.data.get("title", "") == "foo"
+        """Return the native value of the sensor."""
+        uuid, address = self.entity_description.key.split("--")
+        data = self.coordinator.data.get(uuid, {})
+        return (
+            data.get("obj", {})
+            .get("lastMeasure", {})
+            .get(
+                address,
+                None,
+            )
+        )

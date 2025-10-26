@@ -1,9 +1,9 @@
 """
-Custom integration to integrate integration_blueprint with Home Assistant.
+Custom integration to integrate sunthalpy with Home Assistant.
 
 For more details about this integration, please refer to
-https://github.com/ludeeus/integration_blueprint
-"""
+https://github.com/rogorvi/sunthalpy
+"""  # noqa: EXE002
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.loader import async_get_loaded_integration
 
@@ -28,6 +29,7 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.BINARY_SENSOR,
     Platform.SWITCH,
+    Platform.NUMBER,
 ]
 
 
@@ -41,7 +43,7 @@ async def async_setup_entry(
         hass=hass,
         logger=LOGGER,
         name=DOMAIN,
-        update_interval=timedelta(hours=1),
+        update_interval=timedelta(minutes=2),
     )
     entry.runtime_data = IntegrationBlueprintData(
         client=IntegrationBlueprintApiClient(
@@ -51,6 +53,17 @@ async def async_setup_entry(
         ),
         integration=async_get_loaded_integration(hass, entry.domain),
         coordinator=coordinator,
+    )
+
+    # Create a device for this integration
+    device_registry = dr.async_get(hass)
+    device_registry.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        connections={("email", entry.data[CONF_USERNAME])},
+        identifiers={(DOMAIN, entry.data[CONF_USERNAME])},
+        manufacturer="Sunthalpy",
+        name=entry.data[CONF_USERNAME],
+        model="base",
     )
 
     # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
