@@ -3,7 +3,8 @@ The `Suntahlpy` [Home Assistant](https://www.home-assistant.io) integration allo
 
 This integration also creates some additional helper sensors for energy monitoring. This allows for an easier integration with the default Energy dashbpoard in Home Assistant.
 
-**Note**: This custom component is based on [integration_blueprint template](https://github.com/ludeeus/integration_blueprint). Most of this project content remains as it was in the blueprint.
+**Note**: This integration is not developed or supported by Sunthalpy Engineering, S.L. It is provided “as is,” and you use it at your own risk.
+**Note**: This custom integration is based on [integration_blueprint template](https://github.com/ludeeus/integration_blueprint). Most of this project content remains as it was in the blueprint.
 
 
 ## Installation
