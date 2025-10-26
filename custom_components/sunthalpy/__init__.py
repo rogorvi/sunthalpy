@@ -3,7 +3,7 @@ Custom integration to integrate sunthalpy with Home Assistant.
 
 For more details about this integration, please refer to
 https://github.com/rogorvi/sunthalpy
-"""  # noqa: EXE002
+"""
 
 from __future__ import annotations
 

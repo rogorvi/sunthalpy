@@ -1,4 +1,4 @@
-"""Class containing Sunthalpy data structures and methods."""  # noqa: EXE002
+"""Class containing Sunthalpy data structures and methods."""
 
 from dataclasses import dataclass
 

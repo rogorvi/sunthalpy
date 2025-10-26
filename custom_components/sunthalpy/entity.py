@@ -1,4 +1,4 @@
-"""BlueprintEntity class."""  # noqa: EXE002
+"""BlueprintEntity class."""
 
 from __future__ import annotations
 

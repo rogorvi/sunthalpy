@@ -1,4 +1,4 @@
-"""Binary sensor platform for integration_blueprint."""  # noqa: EXE002
+"""Binary sensor platform for integration_blueprint."""
 
 from __future__ import annotations
 

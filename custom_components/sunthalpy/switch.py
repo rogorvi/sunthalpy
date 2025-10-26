@@ -1,4 +1,4 @@
-"""Switch platform for integration_blueprint."""  # noqa: EXE002
+"""Switch platform for integration_blueprint."""
 
 from __future__ import annotations
 

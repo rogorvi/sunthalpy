@@ -1,4 +1,4 @@
-"""Sensor platform for sunthalpy."""  # noqa: EXE002
+"""Sensor platform for sunthalpy."""
 
 from __future__ import annotations
 

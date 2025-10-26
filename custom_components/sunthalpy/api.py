@@ -1,4 +1,4 @@
-"""Sample API Client."""  # noqa: EXE002
+"""Sample API Client."""
 
 from __future__ import annotations
 

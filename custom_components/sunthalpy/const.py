@@ -1,4 +1,4 @@
-"""Constants for sunthalpy."""  # noqa: EXE002
+"""Constants for sunthalpy."""
 
 from logging import Logger, getLogger
 
