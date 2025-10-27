@@ -78,8 +78,7 @@ class IntegrationBlueprintApiClient:
         }
 
     async def _switch(self, uuid: str, address: str, *, set_to: bool) -> Any:
-        """Get data from the API."""
-        # Set switch status
+        """Set switch status."""
         data_headers = cnt.HEADERS.copy()
         data_headers["auth"] = await self._get_token()
         return await self._api_wrapper(
