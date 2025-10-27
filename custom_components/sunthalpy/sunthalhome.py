@@ -81,7 +81,7 @@ class SensorSunthalDataPoint(SunthalDataPoint):
     device_class: SensorDeviceClass | None = None
 
 
-switches = (
+switches: tuple[SwitchSunthalDataPoint, ...] = (
     SwitchSunthalDataPoint(
         device_class=SwitchDeviceClass.SWITCH,
         uuid_name="user_sets",
@@ -98,7 +98,7 @@ switches = (
     ),
 )
 
-numbers = (
+numbers: tuple[NumberSunthalDataPoint, ...] = (
     NumberSunthalDataPoint(
         device_class=NumberDeviceClass.TEMPERATURE,
         uuid_name="user_sets",
@@ -123,7 +123,7 @@ numbers = (
     ),
 )
 
-binary_sensors = (
+binary_sensors: tuple[BinarySunthalDataPoint, ...] = (
     BinarySunthalDataPoint(
         uuid_name="user_sets",
         name="ngrok on",
@@ -151,7 +151,7 @@ binary_sensors = (
     ),
 )
 
-sensors = (
+sensors: tuple[SensorSunthalDataPoint, ...] = (
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
         uuid_name="user_sets",
