@@ -60,7 +60,12 @@ async def async_setup_entry(
     device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,
         connections={("email", entry.data[CONF_USERNAME])},
-        identifiers={(DOMAIN, entry.data[CONF_USERNAME])},
+        identifiers={
+            (
+                coordinator.config_entry.domain,
+                coordinator.config_entry.entry_id,
+            ),
+        },
         manufacturer="Sunthalpy",
         name=entry.data[CONF_USERNAME],
         model="base",

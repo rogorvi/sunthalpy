@@ -27,8 +27,5 @@ class IntegrationBlueprintEntity(CoordinatorEntity[BlueprintDataUpdateCoordinato
                     coordinator.config_entry.entry_id,
                 ),
             },
-        )
-        # Link to main device
-        self._attr_device_info = DeviceInfo(
             connections={("email", coordinator.config_entry.data.get("username", ""))},
         )
