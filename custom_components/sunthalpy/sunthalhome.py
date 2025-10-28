@@ -4,9 +4,14 @@ from dataclasses import dataclass
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.number import NumberDeviceClass, NumberMode
-from homeassistant.components.sensor import SensorDeviceClass
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.components.switch import SwitchDeviceClass
-from homeassistant.const import UnitOfPower, UnitOfPressure, UnitOfTemperature
+from homeassistant.const import (
+    UnitOfEnergy,
+    UnitOfPower,
+    UnitOfPressure,
+    UnitOfTemperature,
+)
 
 BASE_URL: str = "https://cliente.sunthalpy.com:12345/api/client"
 UUIDS: dict = {
@@ -79,6 +84,16 @@ class SensorSunthalDataPoint(SunthalDataPoint):
     """Represents a binary data point for the Sunthalpy home automation system."""
 
     device_class: SensorDeviceClass | None = None
+    state_class: SensorStateClass | None = None
+
+
+@dataclass
+class HistSensorSunthalDataPoint(SunthalDataPoint):
+    """Represents a binary data point for the Sunthalpy home automation system."""
+
+    source_entity_id: str = ""
+    device_class: SensorDeviceClass | None = None
+    state_class: SensorStateClass | None = None
 
 
 switches: tuple[SwitchSunthalDataPoint, ...] = (
@@ -154,6 +169,7 @@ binary_sensors: tuple[BinarySunthalDataPoint, ...] = (
 sensors: tuple[SensorSunthalDataPoint, ...] = (
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="user_sets",
         name="Temp. min online",
         address="1100",
@@ -162,6 +178,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="user_sets",
         name="Temp. max online",
         address="1101",
@@ -170,6 +187,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="main_data",
         name="Temp. interior",
         address="103",
@@ -177,6 +195,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.HUMIDITY,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="main_data",
         name="Humedad Interior",
         address="102",
@@ -184,6 +203,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Temp. impulsion interior",
         address="1",
@@ -191,6 +211,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Temp. retorno interior",
         address="2",
@@ -198,6 +219,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Temp. impulsion exterior",
         address="4",
@@ -205,6 +227,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Temp. retorno exterior",
         address="5",
@@ -212,6 +235,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.PRESSURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Presión circuito",
         address="6",
@@ -219,6 +243,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Temp. ACS",
         address="11",
@@ -226,6 +251,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Temp. Exterior",
         address="20",
@@ -233,6 +259,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Potencia instantánea calefacción",
         address="133",
@@ -240,6 +267,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Potencia instantánea refrigeración",
         address="134",
@@ -247,6 +275,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Consumo eléctrico",
         address="135",
@@ -254,18 +283,21 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.POWER_FACTOR,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="COP",
         address="136",
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.POWER_FACTOR,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="EER",
         address="137",
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Consigna temp. ACS",
         address="168",
@@ -273,6 +305,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Consigna temp. calefacción",
         address="170",
@@ -280,12 +313,14 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Consigna temp. refrigeración",
         address="175",
         unit=UnitOfTemperature.CELSIUS,
     ),
     SensorSunthalDataPoint(
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="RPM Compresor",
         address="5002",
@@ -293,27 +328,65 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         start_enabled=False,
     ),
     SensorSunthalDataPoint(
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Bus Demanda ACS",
         address="5181",
         start_enabled=False,
     ),
     SensorSunthalDataPoint(
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Bus Demanda DG1",
         address="5183",
         start_enabled=False,
     ),
     SensorSunthalDataPoint(
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Bus Programa",
         address="5188",
         start_enabled=False,
     ),
     SensorSunthalDataPoint(
+        state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
         name="Bus Enciende Bomba Calor",
         address="5257",
         start_enabled=False,
+    ),
+)
+
+hist_sensors: tuple[HistSensorSunthalDataPoint, ...] = (
+    HistSensorSunthalDataPoint(
+        device_class=SensorDeviceClass.ENERGY,
+        uuid_name="",
+        name="Energía calefacción. Diario",
+        address="",
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        source_entity_id="sensor.Potencia instantanea calefaccion".replace(
+            " ", "_"
+        ).lower(),
+    ),
+    HistSensorSunthalDataPoint(
+        device_class=SensorDeviceClass.ENERGY,
+        uuid_name="",
+        name="Energía refrigeración. Diario",
+        address="",
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        source_entity_id="sensor.Potencia instantanea refrigeracion".replace(
+            " ", "_"
+        ).lower(),
+    ),
+    HistSensorSunthalDataPoint(
+        device_class=SensorDeviceClass.ENERGY,
+        uuid_name="",
+        name="Consumo eléctrico. Diario",
+        address="",
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        source_entity_id="sensor.Consumo electrico".replace(" ", "_").lower(),
     ),
 )
