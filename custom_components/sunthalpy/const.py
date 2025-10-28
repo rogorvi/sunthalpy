@@ -5,7 +5,6 @@ from logging import Logger, getLogger
 LOGGER: Logger = getLogger(__package__)
 
 DOMAIN = "sunthalpy"
-ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
 
 BASE_URL: str = "https://cliente.sunthalpy.com:12345/api/client"
 UUIDS: dict = {
