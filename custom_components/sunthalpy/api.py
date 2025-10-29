@@ -82,13 +82,13 @@ class IntegrationBlueprintApiClient:
             data.get("main_data", {})
             .get("obj", {})
             .get("lastMeasure", {})
-            .get("103", 1.0)
+            .get("103", None)
         )
         humidity: float = (
             data.get("main_data", {})
             .get("obj", {})
             .get("lastMeasure", {})
-            .get("102", 1.0)
+            .get("102", None)
         )
 
         data.setdefault("calc_data", {}).setdefault("obj", {}).setdefault(
@@ -97,12 +97,15 @@ class IntegrationBlueprintApiClient:
 
         return data
 
-    def get_dew_point(self, temp: float, humidity: float) -> float:
+    def get_dew_point(self, temp: float, humidity: float) -> float | None:
         """
         Calculate dew point based on temperature and humidity inputs.
 
         temp in Celsius. humidity in %.
         """
+        if not temp or not humidity:
+            return None
+
         b = 17.625
         c = 243.04
         gamma = log(humidity / 100) + (b * temp) / (c + temp)
