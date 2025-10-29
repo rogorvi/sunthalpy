@@ -87,20 +87,25 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
         super().__init__(coordinator, entity_description.key)
         self.entity_description = entity_description
 
-    @property
-    def native_value(self) -> Any:
-        """Return the native value of the sensor."""
+    def _get_sensor_data(self) -> Any:
+        """Get the sensor data from coordinator."""
         uuid_name, address = self.entity_description.key.split("--")
         data = self.coordinator.data.get(uuid_name, {})
 
-        return (
-            data.get("obj", {})
-            .get("lastMeasure", {})
-            .get(
-                address,
-                None,
-            )
-        )
+        return data.get("obj", {}).get("lastMeasure", {}).get(address, None)
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        if not self.coordinator.last_update_success:
+            return False
+
+        return self._get_sensor_data() is not None
+
+    @property
+    def native_value(self) -> Any:
+        """Return the native value of the sensor."""
+        return self._get_sensor_data()
 
 
 class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntity):
