@@ -24,7 +24,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import LOGGER
 from .entity import IntegrationBlueprintEntity
-from .sunthalhome import hist_sensors, sensors
+from .sunthalhome import calc_sensors, hist_sensors, sensors
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -45,7 +45,7 @@ ENTITY_DESCRIPTIONS = (
         entity_registry_enabled_default=elem.start_enabled,
         icon=elem.icon,
     )
-    for elem in sensors
+    for elem in sensors + calc_sensors
 )
 
 

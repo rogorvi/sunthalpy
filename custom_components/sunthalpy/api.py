@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import socket
+from math import log
 from typing import Any
 
 import aiohttp
@@ -67,7 +68,7 @@ class IntegrationBlueprintApiClient:
         # Get data
         data_headers = cnt.HEADERS.copy()
         data_headers["auth"] = await self._get_token()
-        return {
+        data = {
             uuid_name: await self._api_wrapper(
                 method="post",
                 url=f"{cnt.BASE_URL}/get/device-data/last",
@@ -76,6 +77,36 @@ class IntegrationBlueprintApiClient:
             )
             for uuid_name, uuid in cnt.UUIDS.items()
         }
+
+        temp: float = (
+            data.get("main_data", {})
+            .get("obj", {})
+            .get("lastMeasure", {})
+            .get("103", 1.0)
+        )
+        humidity: float = (
+            data.get("main_data", {})
+            .get("obj", {})
+            .get("lastMeasure", {})
+            .get("102", 1.0)
+        )
+
+        data.setdefault("calc_data", {}).setdefault("obj", {}).setdefault(
+            "lastMeasure", {}
+        )["0000"] = self.get_dew_point(temp, humidity)
+
+        return data
+
+    def get_dew_point(self, temp: float, humidity: float) -> float:
+        """
+        Calculate dew point based on temperature and humidity inputs.
+
+        temp in Celsius. humidity in %.
+        """
+        b = 17.625
+        c = 243.04
+        gamma = log(humidity / 100) + (b * temp) / (c + temp)
+        return round(c * gamma / (b - gamma), 1)
 
     async def _switch(self, uuid: str, address: str, *, set_to: bool) -> Any:
         """Set switch status."""

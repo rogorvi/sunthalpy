@@ -390,3 +390,14 @@ hist_sensors: tuple[HistSensorSunthalDataPoint, ...] = (
         source_entity_id="sensor.Consumo electrico".replace(" ", "_").lower(),
     ),
 )
+
+calc_sensors: tuple[SensorSunthalDataPoint, ...] = (
+    SensorSunthalDataPoint(
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        uuid_name="calc_data",
+        name="Temp. rocío interior",
+        address="0000",
+        unit=UnitOfTemperature.CELSIUS,
+    ),
+)
