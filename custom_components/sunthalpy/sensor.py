@@ -37,13 +37,21 @@ if TYPE_CHECKING:
     from .data import IntegrationBlueprintConfigEntry
 
 ENTITY_DESCRIPTIONS = (
-    SensorEntityDescription(
-        key=f"{elem.uuid_name}--{elem.address}",
-        name=elem.name,
-        device_class=elem.device_class,
-        native_unit_of_measurement=elem.unit,
-        entity_registry_enabled_default=elem.start_enabled,
-        icon=elem.icon,
+    (
+        SensorEntityDescription(
+            key=f"{elem.uuid_name}--{elem.address}",
+            name=elem.name,
+            device_class=elem.device_class,
+            native_unit_of_measurement=elem.unit,
+            entity_registry_enabled_default=elem.start_enabled,
+            icon=elem.icon,
+        ),
+        {
+            "uuid_name": elem.uuid_name,
+            "address": elem.address,
+            "clamp_min": elem.clamp_min,
+            "clamp_max": elem.clamp_max,
+        },
     )
     for elem in sensors + calc_sensors
 )
@@ -54,15 +62,17 @@ async def async_setup_entry(
     entry: IntegrationBlueprintConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the sensor platform."""
+    """Set up all sensors."""
+    # Set up the sensor platform."""
     async_add_entities(
         IntegrationBlueprintSensor(
             coordinator=entry.runtime_data.coordinator,
             entity_description=entity_description,
+            add_data=add_data,
         )
-        for entity_description in ENTITY_DESCRIPTIONS
+        for entity_description, add_data in ENTITY_DESCRIPTIONS
     )
-    """Set up the history sensor platform."""
+    # Set up the history sensor platform.
     async_add_entities(
         DailyIntegralSensor(
             hass,
@@ -82,10 +92,12 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
         self,
         coordinator: BlueprintDataUpdateCoordinator,
         entity_description: SensorEntityDescription,
+        add_data: dict | None = None,
     ) -> None:
         """Initialize the sensor class."""
         super().__init__(coordinator, entity_description.key)
         self.entity_description = entity_description
+        self.add_data = add_data if add_data else {}
 
     def _get_sensor_data(self) -> Any:
         """Get the sensor data from coordinator."""
@@ -108,7 +120,29 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         """Return the native value of the sensor."""
-        return self._get_sensor_data()
+        value = self._get_sensor_data()
+
+        # OPTIONAL: Apply clamping if configured
+        if value is not None:
+            clamp_min = self.add_data.get("clamp_min")
+            clamp_max = self.add_data.get("clamp_max")
+
+            if clamp_min is not None and value < clamp_min:
+                LOGGER.info(
+                    f"Clamped value of {self.name}. "
+                    f"Original value {value}, "
+                    f"converted to {clamp_min}."
+                )
+                return clamp_min
+            if clamp_max is not None and value > clamp_max:
+                LOGGER.info(
+                    f"Clamped value of {self.name}. "
+                    f"Original value {value}, "
+                    f"converted to {clamp_max}."
+                )
+                return clamp_max
+
+        return value
 
 
 class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntity):
@@ -136,10 +170,8 @@ class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntit
 
         # Set appropriate attributes
         self._attr_state_class = SensorStateClass.TOTAL
-        self._attr_device_class = SensorDeviceClass.ENERGY  # Adjust based on your needs
-        self._attr_native_unit_of_measurement = (
-            UnitOfEnergy.KILO_WATT_HOUR
-        )  # Adjust based on source sensor
+        self._attr_device_class = SensorDeviceClass.ENERGY
+        self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
         self._attr_suggested_display_precision = 1
 
     @property
@@ -193,10 +225,8 @@ class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntit
         )
 
     async def async_added_to_hass(self) -> None:
-        """Register callbacks  and restore state when entity is added."""
+        """Register callbacks and restore state when entity is added."""
         await super().async_added_to_hass()
-
-        self.on_start_func_register()
 
         # Restore previous state
         last_state = await self.async_get_last_state()
@@ -246,6 +276,7 @@ class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntit
                 LOGGER.warning(f"Could not restore state: {ex}")
 
         # Initialize with current state if not restored
+        # but don't fail if entity doesn't exist yet
         if self._last_value is None:
             source_state = self._hass.states.get(self._source_entity_id)
             if source_state and source_state.state not in ("unknown", "unavailable"):
@@ -253,7 +284,13 @@ class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntit
                     self._last_value = float(source_state.state)
                     self._last_update = dt_util.utcnow()
                 except ValueError:
-                    LOGGER.warning("Could not convert %s to float", source_state.state)
+                    LOGGER.debug(
+                        f"Could not convert {source_state.state}"
+                        f" to float for {self._source_entity_id}"
+                    )
+
+        # Register the listeners
+        self.on_start_func_register()
 
     @callback
     def _async_sensor_changed(self, event) -> None:  # noqa: ANN001

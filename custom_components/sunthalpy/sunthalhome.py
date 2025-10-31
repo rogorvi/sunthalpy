@@ -52,6 +52,8 @@ class SunthalDataPoint:
     current_value = None
     start_enabled: bool = True
     icon: str | None = None
+    clamp_min: int | float | None = None
+    clamp_max: int | float | None = None
 
 
 @dataclass
@@ -175,6 +177,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         address="1100",
         unit=UnitOfTemperature.CELSIUS,
         start_enabled=False,
+        clamp_min=0,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -184,6 +188,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         address="1101",
         unit=UnitOfTemperature.CELSIUS,
         start_enabled=False,
+        clamp_min=0,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -192,6 +198,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Temp. interior",
         address="103",
         unit=UnitOfTemperature.CELSIUS,
+        clamp_min=-50,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.HUMIDITY,
@@ -200,6 +208,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Humedad Interior",
         address="102",
         unit="%",
+        clamp_min=0,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -208,6 +218,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Temp. impulsion interior",
         address="1",
         unit=UnitOfTemperature.CELSIUS,
+        clamp_min=0,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -216,6 +228,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Temp. retorno interior",
         address="2",
         unit=UnitOfTemperature.CELSIUS,
+        clamp_min=0,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -224,6 +238,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Temp. impulsion exterior",
         address="4",
         unit=UnitOfTemperature.CELSIUS,
+        clamp_min=0,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -232,6 +248,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Temp. retorno exterior",
         address="5",
         unit=UnitOfTemperature.CELSIUS,
+        clamp_min=0,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.PRESSURE,
@@ -240,6 +258,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Presión circuito",
         address="6",
         unit=UnitOfPressure.BAR,
+        clamp_min=0,
+        clamp_max=5,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -248,6 +268,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Temp. ACS",
         address="11",
         unit=UnitOfTemperature.CELSIUS,
+        clamp_min=0,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -256,6 +278,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Temp. Exterior",
         address="20",
         unit=UnitOfTemperature.CELSIUS,
+        clamp_min=-50,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.POWER,
@@ -264,6 +288,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Potencia instantánea calefacción",
         address="133",
         unit=UnitOfPower.KILO_WATT,
+        clamp_min=0,
+        clamp_max=111.111,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.POWER,
@@ -272,6 +298,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Potencia instantánea refrigeración",
         address="134",
         unit=UnitOfPower.KILO_WATT,
+        clamp_min=0,
+        clamp_max=111.111,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.POWER,
@@ -280,6 +308,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Consumo eléctrico",
         address="135",
         unit=UnitOfPower.KILO_WATT,
+        clamp_min=0,
+        clamp_max=111.111,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.POWER_FACTOR,
@@ -287,6 +317,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         uuid_name="other_data",
         name="COP",
         address="136",
+        clamp_min=0,
+        clamp_max=11.11,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.POWER_FACTOR,
@@ -294,6 +326,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         uuid_name="other_data",
         name="EER",
         address="137",
+        clamp_min=0,
+        clamp_max=11.11,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -302,6 +336,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Consigna temp. ACS",
         address="168",
         unit=UnitOfTemperature.CELSIUS,
+        clamp_min=0,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -310,6 +346,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Consigna temp. calefacción",
         address="170",
         unit=UnitOfTemperature.CELSIUS,
+        clamp_min=0,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -318,6 +356,8 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         name="Consigna temp. refrigeración",
         address="175",
         unit=UnitOfTemperature.CELSIUS,
+        clamp_min=0,
+        clamp_max=100,
     ),
     SensorSunthalDataPoint(
         state_class=SensorStateClass.MEASUREMENT,
@@ -326,6 +366,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         address="5002",
         unit="RPM",
         start_enabled=False,
+        clamp_min=0,
     ),
     SensorSunthalDataPoint(
         state_class=SensorStateClass.MEASUREMENT,
