@@ -89,6 +89,9 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
 
     def _get_sensor_data(self) -> Any:
         """Get the sensor data from coordinator."""
+        if self.coordinator.data is None:
+            return None
+
         uuid_name, address = self.entity_description.key.split("--")
         data = self.coordinator.data.get(uuid_name, {})
 
