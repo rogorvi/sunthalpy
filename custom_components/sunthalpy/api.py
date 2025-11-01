@@ -51,7 +51,6 @@ class IntegrationBlueprintApiClient:
         self._username = username
         self._password = password
         self._session = session
-        self._session.connector._ssl = False  # type: ignore # Disable SSL verification  # noqa: PGH003, SLF001
         self._data: dict | None = None
         self._prev_data: dict | None = None
 
@@ -260,10 +259,7 @@ class IntegrationBlueprintApiClient:
         try:
             async with async_timeout.timeout(10):
                 response = await self._session.request(
-                    method=method,
-                    url=url,
-                    headers=headers,
-                    json=data,
+                    method=method, url=url, headers=headers, json=data, ssl=False
                 )
                 _verify_response_or_raise(response)
                 return await response.json()
