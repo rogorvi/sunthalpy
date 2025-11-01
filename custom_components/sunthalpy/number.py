@@ -57,8 +57,11 @@ class SunthalpyNumber(IntegrationBlueprintEntity, NumberEntity):
         entity_description: NumberEntityDescription,
     ) -> None:
         """Initialize the number class."""
-        super().__init__(coordinator, entity_description.key)
+        super().__init__(coordinator)
         self.entity_description = entity_description
+        self._attr_unique_id = (
+            f"{self.coordinator.config_entry.unique_id}{entity_description.name}"
+        )
 
     @property
     def native_value(self) -> float | None:

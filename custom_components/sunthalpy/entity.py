@@ -12,11 +12,12 @@ class IntegrationBlueprintEntity(CoordinatorEntity[BlueprintDataUpdateCoordinato
     """BlueprintEntity class."""
 
     def __init__(
-        self, coordinator: BlueprintDataUpdateCoordinator, key: str = ""
+        self,
+        coordinator: BlueprintDataUpdateCoordinator,
     ) -> None:
         """Initialize."""
         super().__init__(coordinator)
-        self._attr_unique_id = coordinator.config_entry.entry_id + key
+        self._attr_unique_id = coordinator.config_entry.entry_id
         self._attr_device_info = DeviceInfo(
             identifiers={
                 (
@@ -24,5 +25,4 @@ class IntegrationBlueprintEntity(CoordinatorEntity[BlueprintDataUpdateCoordinato
                     coordinator.config_entry.entry_id,
                 ),
             },
-            connections={("email", coordinator.config_entry.data.get("username", ""))},
         )
