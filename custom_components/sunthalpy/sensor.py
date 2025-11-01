@@ -186,7 +186,7 @@ class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntit
             "last_update": self._last_update.isoformat() if self._last_update else None,
         }
 
-    def on_start_func_register(self) -> None:
+    def _on_start_func_register(self) -> None:
         """Register callbacks."""
         # Track state changes of the source sensor
         self.async_on_remove(
@@ -288,7 +288,7 @@ class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntit
                     )
 
         # Register the listeners
-        self.on_start_func_register()
+        self._on_start_func_register()
 
     @callback
     def _async_sensor_changed(self, event) -> None:  # noqa: ANN001
