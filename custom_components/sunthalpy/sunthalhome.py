@@ -441,4 +441,10 @@ calc_sensors: tuple[SensorSunthalDataPoint, ...] = (
         address="0000",
         unit=UnitOfTemperature.CELSIUS,
     ),
+    SensorSunthalDataPoint(
+        device_class=SensorDeviceClass.ENUM,
+        uuid_name="calc_data",
+        name="Estado",
+        address="0001",
+    ),
 )

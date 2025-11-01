@@ -2,6 +2,8 @@
 
 from logging import Logger, getLogger
 
+from attr import dataclass
+
 LOGGER: Logger = getLogger(__package__)
 
 DOMAIN = "sunthalpy"
@@ -14,3 +16,15 @@ UUIDS: dict = {
 }
 HEADERS: dict = {"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}
 TIMEOUT: int = 30
+
+
+@dataclass
+class AeroModes:
+    """Modes in which the aerothermal device can be."""
+
+    IDLE = "Esperando"
+    COOLING = "Refrigerando"
+    HEATING = "Calefactando"
+    ACS = "ACS"
+    MODE_WAITING = " y {} esperando"
+    UNKNOWN = "Desconocido"

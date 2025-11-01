@@ -78,7 +78,6 @@ async def async_setup_entry(
             hass,
             coordinator=entry.runtime_data.coordinator,
             name=elem.name,
-            key=elem.name.replace(" ", "_").lower(),
             source_entity_id=elem.source_entity_id,
         )
         for elem in hist_sensors
@@ -95,7 +94,7 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
         add_data: dict | None = None,
     ) -> None:
         """Initialize the sensor class."""
-        super().__init__(coordinator)  # , entity_description.key)
+        super().__init__(coordinator)
         self.entity_description = entity_description
         self.add_data = add_data if add_data else {}
         self._attr_unique_id = (
@@ -125,7 +124,7 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
         """Return the native value of the sensor."""
         value = self._get_sensor_data()
 
-        # OPTIONAL: Apply clamping if configured
+        # Apply clamping if configured
         if value is not None:
             clamp_min = self.add_data.get("clamp_min")
             clamp_max = self.add_data.get("clamp_max")
@@ -156,7 +155,6 @@ class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntit
         hass: HomeAssistant,
         source_entity_id: str,
         name: str,
-        key: str,
         coordinator: BlueprintDataUpdateCoordinator,
     ) -> None:
         """Initialize the sensor."""

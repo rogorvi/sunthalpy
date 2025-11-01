@@ -52,6 +52,8 @@ class IntegrationBlueprintApiClient:
         self._password = password
         self._session = session
         self._session.connector._ssl = False  # type: ignore # Disable SSL verification  # noqa: PGH003, SLF001
+        self._data: dict | None = None
+        self._prev_data: dict | None = None
 
     async def _get_token(self) -> str:
         """Get token from the API."""
@@ -65,7 +67,6 @@ class IntegrationBlueprintApiClient:
 
     async def async_get_data(self) -> Any:
         """Get data from the API."""
-        # Get data
         data_headers = cnt.HEADERS.copy()
         data_headers["auth"] = await self._get_token()
         data = {
@@ -95,7 +96,104 @@ class IntegrationBlueprintApiClient:
             "lastMeasure", {}
         )["0000"] = self._get_dew_point(temp, humidity)
 
+        data.setdefault("calc_data", {}).setdefault("obj", {}).setdefault(
+            "lastMeasure", {}
+        )["0001"] = self._get_aero_state(data, self._data)
+
+        self._prev_data = self._data
+        self._data = data
+
         return data
+
+    def get_pot_cool(self, data: dict) -> float | None:
+        """Get Potencia instantánea refrigeración."""
+        return (
+            data.get("other_data", {})
+            .get("obj", {})
+            .get("lastMeasure", {})
+            .get("134", None)
+        )
+
+    def get_pot_heat(self, data: dict) -> float | None:
+        """Get Potencia instantánea calefacción."""
+        return (
+            data.get("other_data", {})
+            .get("obj", {})
+            .get("lastMeasure", {})
+            .get("133", None)
+        )
+
+    def get_acs_temp(self, data: dict) -> float | None:
+        """Get Temp. ACS."""
+        return (
+            data.get("other_data", {})
+            .get("obj", {})
+            .get("lastMeasure", {})
+            .get("11", None)
+        )
+
+    def get_dg1(self, data: dict) -> float | None:
+        """Get Bus Demanda DG1."""
+        return (
+            data.get("other_data", {})
+            .get("obj", {})
+            .get("lastMeasure", {})
+            .get("5183", None)
+        )
+
+    def get_is_winter(self, data: dict) -> float | None:
+        """Get Bus Demanda DG1."""
+        return (
+            data.get("other_data", {})
+            .get("obj", {})
+            .get("lastMeasure", {})
+            .get("202", None)
+        )
+
+    def _get_aero_state(self, data: dict | None, prev_data: dict | None) -> str:
+        """Find the aerothermal device sate."""
+        if prev_data is None or data is None:
+            return cnt.AeroModes.IDLE
+
+        pot_cool = self.get_pot_cool(data)
+        pot_heat = self.get_pot_heat(data)
+        acs_now = self.get_acs_temp(data)
+        is_winter = self.get_is_winter(data)
+        acs_prev = self.get_acs_temp(prev_data)
+        dg1 = self.get_acs_temp(data)
+
+        # If current or prev data are not available, return idle state
+        if pot_cool is None or pot_heat is None or acs_now is None or acs_prev is None:
+            return cnt.AeroModes.IDLE
+
+        acs_increasing: bool = acs_prev < acs_now
+        dg1_active: bool = str(dg1) == "1"
+
+        # If there is no cooling nor heating energy, return idle
+        if pot_cool == 0 and pot_heat == 0:
+            return cnt.AeroModes.IDLE
+        # If there is cooling energy return cooling
+        if pot_cool > 0:
+            return cnt.AeroModes.COOLING
+        # If there is heating energy we need to check if it's ACS
+        if pot_heat > 0:
+            if acs_increasing:
+                mode = cnt.AeroModes.ACS
+                # Since ACS has priority over heating and cooling
+                # we check if those are waiting
+                if dg1_active:
+                    waiting_mode = (
+                        # is_winter defines the waiting enery mode
+                        cnt.AeroModes.HEATING if is_winter else cnt.AeroModes.COOLING
+                    )
+                    mode += cnt.AeroModes.MODE_WAITING.format(waiting_mode)
+            else:
+                # If there is no ACS, then we are hearing
+                mode = cnt.AeroModes.HEATING
+            return mode
+
+        # Catch states not considered above
+        return cnt.AeroModes.UNKNOWN
 
     def _get_dew_point(self, temp: float, humidity: float) -> float | None:
         """
