@@ -166,7 +166,7 @@ class IntegrationBlueprintApiClient:
         if pot_cool is None or pot_heat is None or acs_now is None or acs_prev is None:
             return cnt.AeroModes.IDLE
 
-        acs_increasing: bool = acs_prev < acs_now
+        acs_increasing: bool = acs_prev <= acs_now
         dg1_active: bool = str(dg1) == "1"
 
         # If there is no cooling nor heating energy, return idle
