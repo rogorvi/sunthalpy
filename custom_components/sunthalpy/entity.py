@@ -19,6 +19,7 @@ class IntegrationBlueprintEntity(CoordinatorEntity[BlueprintDataUpdateCoordinato
         """Initialize."""
         super().__init__(coordinator)
         self._attr_unique_id = coordinator.config_entry.entry_id + unique_id_suffix
+        self._attr_has_entity_name = True
         self._attr_device_info = DeviceInfo(
             identifiers={
                 (

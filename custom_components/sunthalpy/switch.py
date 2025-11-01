@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from .coordinator import BlueprintDataUpdateCoordinator
     from .data import IntegrationBlueprintConfigEntry
 
-ENTITY_DESCRIPTIONS = (
+ENTITY_DESCRIPTIONS = tuple(
     SwitchEntityDescription(
         key=f"{elem.uuid_name}--{elem.address}",
         name=elem.name,
