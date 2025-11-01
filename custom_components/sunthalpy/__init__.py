@@ -42,7 +42,7 @@ async def async_setup_entry(
     coordinator = BlueprintDataUpdateCoordinator(
         hass=hass,
         logger=LOGGER,
-        name=DOMAIN,
+        name=DOMAIN + entry.data[CONF_USERNAME],
         update_interval=timedelta(minutes=1),
     )
     entry.runtime_data = IntegrationBlueprintData(
