@@ -53,11 +53,9 @@ class IntegrationBlueprintSwitch(IntegrationBlueprintEntity, SwitchEntity):
         entity_description: SwitchEntityDescription,
     ) -> None:
         """Initialize the switch class."""
-        super().__init__(coordinator)
+        name = entity_description.name if type(entity_description.name) is str else ""
+        super().__init__(coordinator, name)
         self.entity_description = entity_description
-        self._attr_unique_id = (
-            f"{self.coordinator.config_entry.unique_id}{entity_description.name}"
-        )
 
     @property
     def is_on(self) -> bool:

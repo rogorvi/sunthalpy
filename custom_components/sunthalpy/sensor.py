@@ -94,12 +94,10 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
         add_data: dict | None = None,
     ) -> None:
         """Initialize the sensor class."""
-        super().__init__(coordinator)
+        name = entity_description.name if type(entity_description.name) is str else ""
+        super().__init__(coordinator, name)
         self.entity_description = entity_description
         self.add_data = add_data if add_data else {}
-        self._attr_unique_id = (
-            f"{self.coordinator.config_entry.unique_id}{entity_description.name}"
-        )
 
     def _get_sensor_data(self) -> Any:
         """Get the sensor data from coordinator."""
@@ -158,11 +156,10 @@ class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntit
         coordinator: BlueprintDataUpdateCoordinator,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator)
+        super().__init__(coordinator, name)
         self._hass = hass
         self._source_entity_id = source_entity_id
         self._attr_name = name
-        self._attr_unique_id = f"{source_entity_id}_daily_integral"
 
         # State tracking
         self._state = 0

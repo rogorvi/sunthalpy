@@ -14,10 +14,11 @@ class IntegrationBlueprintEntity(CoordinatorEntity[BlueprintDataUpdateCoordinato
     def __init__(
         self,
         coordinator: BlueprintDataUpdateCoordinator,
+        unique_id_suffix: str,
     ) -> None:
         """Initialize."""
         super().__init__(coordinator)
-        self._attr_unique_id = coordinator.config_entry.entry_id
+        self._attr_unique_id = coordinator.config_entry.entry_id + unique_id_suffix
         self._attr_device_info = DeviceInfo(
             identifiers={
                 (
