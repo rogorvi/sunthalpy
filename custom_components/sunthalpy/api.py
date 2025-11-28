@@ -140,6 +140,24 @@ class IntegrationBlueprintApiClient:
             .get("5183", None)
         )
 
+    def get_target_heat_temp(self, data: dict) -> float | None:
+        """Get Consigna temp. calefacción."""
+        return (
+            data.get("other_data", {})
+            .get("obj", {})
+            .get("lastMeasure", {})
+            .get("170", None)
+        )
+
+    def get_return_heat_temp_int(self, data: dict) -> float | None:
+        """Get Consigna temp. calefacción."""
+        return (
+            data.get("other_data", {})
+            .get("obj", {})
+            .get("lastMeasure", {})
+            .get("2", None)
+        )
+
     def get_is_winter(self, data: dict) -> float | None:
         """Get Bus Demanda DG1."""
         return (
@@ -158,14 +176,20 @@ class IntegrationBlueprintApiClient:
         pot_heat = self.get_pot_heat(data)
         acs_now = self.get_acs_temp(data)
         is_winter = self.get_is_winter(data)
-        acs_prev = self.get_acs_temp(prev_data)
-        dg1 = self.get_acs_temp(data)
+        dg1 = self.get_dg1(data)
+        target_heat = self.get_target_heat_temp(data)
+        temp_return = self.get_return_heat_temp_int(data)
 
         # If current or prev data are not available, return idle state
-        if pot_cool is None or pot_heat is None or acs_now is None or acs_prev is None:
+        if (
+            pot_cool is None
+            or pot_heat is None
+            or acs_now is None
+            or target_heat is None
+            or temp_return is None
+        ):
             return cnt.AeroModes.IDLE
 
-        acs_increasing: bool = acs_prev <= acs_now
         dg1_active: bool = str(dg1) == "1"
 
         # If there is no cooling nor heating energy, return idle
@@ -176,7 +200,7 @@ class IntegrationBlueprintApiClient:
             return cnt.AeroModes.COOLING
         # If there is heating energy we need to check if it's ACS
         if pot_heat > 0:
-            if acs_increasing:
+            if temp_return > target_heat + 5:
                 mode = cnt.AeroModes.ACS
                 # Since ACS has priority over heating and cooling
                 # we check if those are waiting
@@ -187,7 +211,7 @@ class IntegrationBlueprintApiClient:
                     )
                     mode += cnt.AeroModes.MODE_WAITING.format(waiting_mode)
             else:
-                # If there is no ACS, then we are hearing
+                # If there is no ACS, then we are heating
                 mode = cnt.AeroModes.HEATING
             return mode
 
