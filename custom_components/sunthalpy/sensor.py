@@ -74,11 +74,12 @@ async def async_setup_entry(
     )
     # Set up the history sensor platform.
     async_add_entities(
-        DailyIntegralSensor(
+        IntegralSensor(
             hass,
             coordinator=entry.runtime_data.coordinator,
             name=elem.name,
             source_entity_id=elem.source_entity_id,
+            reset_daily=elem.reset_daily
         )
         for elem in hist_sensors
     )
@@ -145,7 +146,7 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
         return value
 
 
-class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntity):
+class IntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntity):
     """Sensor that calculates daily integral of another sensor (like utility meter)."""
 
     def __init__(
@@ -154,12 +155,14 @@ class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntit
         source_entity_id: str,
         name: str,
         coordinator: BlueprintDataUpdateCoordinator,
+        reset_daily: bool = False,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator, name)
         self._hass = hass
         self._source_entity_id = source_entity_id
         self._attr_name = name
+        self._reset_daily = reset_daily
 
         # State tracking
         self._state = 0
@@ -198,15 +201,16 @@ class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntit
         )
 
         # Reset daily at midnight
-        self.async_on_remove(
-            async_track_time_change(
-                self._hass,
-                self._async_reset_daily,
-                hour=0,
-                minute=0,
-                second=0,
+        if self._reset_daily:
+            self.async_on_remove(
+                async_track_time_change(
+                    self._hass,
+                    self._async_reset_daily,
+                    hour=0,
+                    minute=0,
+                    second=0,
+                )
             )
-        )
 
         # Update as often as the rest of the sensors
         if self.coordinator.update_interval is None:
@@ -259,7 +263,7 @@ class DailyIntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntit
                 )
 
                 # Check if we should reset (new day)
-                if self._last_update is not None:
+                if self._reset_daily and self._last_update is not None:
                     now = dt_util.now()
                     last_date = dt_util.as_local(self._last_update).date()
                     current_date = now.date()

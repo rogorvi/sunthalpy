@@ -96,6 +96,7 @@ class HistSensorSunthalDataPoint(SunthalDataPoint):
     source_entity_id: str = ""
     device_class: SensorDeviceClass | None = None
     state_class: SensorStateClass | None = None
+    reset_daily: bool = False
 
 
 switches: tuple[SwitchSunthalDataPoint, ...] = (
@@ -305,7 +306,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
-        name="Consumo eléctrico",
+        name="Potencia instantánea total",
         address="135",
         unit=UnitOfPower.KILO_WATT,
         clamp_min=0,
@@ -409,6 +410,18 @@ hist_sensors: tuple[HistSensorSunthalDataPoint, ...] = (
         source_entity_id="sensor.Potencia instantanea calefaccion".replace(
             " ", "_"
         ).lower(),
+        reset_daily = True,
+    ),
+    HistSensorSunthalDataPoint(
+        device_class=SensorDeviceClass.ENERGY,
+        uuid_name="",
+        name="Energía calefacción",
+        address="",
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        source_entity_id="sensor.Potencia instantanea calefaccion".replace(
+            " ", "_"
+        ).lower(),
     ),
     HistSensorSunthalDataPoint(
         device_class=SensorDeviceClass.ENERGY,
@@ -420,15 +433,37 @@ hist_sensors: tuple[HistSensorSunthalDataPoint, ...] = (
         source_entity_id="sensor.Potencia instantanea refrigeracion".replace(
             " ", "_"
         ).lower(),
+        reset_daily = True,
     ),
     HistSensorSunthalDataPoint(
         device_class=SensorDeviceClass.ENERGY,
         uuid_name="",
-        name="Consumo eléctrico. Diario",
+        name="Energía refrigeración",
+        address="",
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        source_entity_id="sensor.Potencia instantanea refrigeracion".replace(
+            " ", "_"
+        ).lower(),
+    ),
+    HistSensorSunthalDataPoint(
+        device_class=SensorDeviceClass.ENERGY,
+        uuid_name="",
+        name="Energía total. Diario",
         address="",
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
         source_entity_id="sensor.Consumo electrico".replace(" ", "_").lower(),
+        reset_daily = True,
+    ),
+    HistSensorSunthalDataPoint(
+        device_class=SensorDeviceClass.ENERGY,
+        uuid_name="",
+        name="Energía total",
+        address="",
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        source_entity_id="sensor.Potencia instantánea total".replace(" ", "_").lower(),
     ),
 )
 
