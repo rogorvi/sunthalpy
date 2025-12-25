@@ -7,12 +7,8 @@ from math import floor
 from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import (
-    SensorDeviceClass,
     SensorEntity,
-    SensorEntityDescription,
-    SensorStateClass,
 )
-from homeassistant.const import UnitOfEnergy
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import (
     async_track_state_change_event,
@@ -21,40 +17,31 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt as dt_util
+from homeassistant.util import slugify
 
-from .const import LOGGER
+from .const import DEFAULT_UPDATE_MIN, LOGGER
 from .entity import IntegrationBlueprintEntity
-from .sunthalhome import calc_sensors, hist_sensors, sensors
+from .sunthalhome import (
+    BinarySunthalDataPoint,
+    HistSensorSunthalDataPoint,
+    NumberSunthalDataPoint,
+    SensorSunthalDataPoint,
+    SunthalDataPoint,
+    SwitchSunthalDataPoint,
+    calc_sensors,
+    hist_sensors,
+    sensors,
+)
 
 if TYPE_CHECKING:
     from datetime import datetime
+    from typing import Any
 
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
-    from uv import Any
 
     from .coordinator import BlueprintDataUpdateCoordinator
     from .data import IntegrationBlueprintConfigEntry
-
-ENTITY_DESCRIPTIONS = tuple(
-    (
-        SensorEntityDescription(
-            key=f"{elem.uuid_name}--{elem.address}",
-            name=elem.name,
-            device_class=elem.device_class,
-            native_unit_of_measurement=elem.unit,
-            entity_registry_enabled_default=elem.start_enabled,
-            icon=elem.icon,
-        ),
-        {
-            "uuid_name": elem.uuid_name,
-            "address": elem.address,
-            "clamp_min": elem.clamp_min,
-            "clamp_max": elem.clamp_max,
-        },
-    )
-    for elem in sensors + calc_sensors
-)
 
 
 async def async_setup_entry(
@@ -67,21 +54,29 @@ async def async_setup_entry(
     async_add_entities(
         IntegrationBlueprintSensor(
             coordinator=entry.runtime_data.coordinator,
-            entity_description=entity_description,
-            add_data=add_data,
+            sensor_data=elem,
         )
-        for entity_description, add_data in ENTITY_DESCRIPTIONS
+        for elem in sensors + calc_sensors
     )
     # Set up the history sensor platform.
     async_add_entities(
         IntegralSensor(
             hass,
             coordinator=entry.runtime_data.coordinator,
-            name=elem.name,
-            source_entity_id=elem.source_entity_id,
-            reset_daily=elem.reset_daily
+            sensor_data=elem,
         )
         for elem in hist_sensors
+        if elem.reset_daily
+    )
+    # Set up the history sensor platform.
+    async_add_entities(
+        DailyIntegralSensor(
+            hass,
+            coordinator=entry.runtime_data.coordinator,
+            sensor_data=elem,
+        )
+        for elem in hist_sensors
+        if not elem.reset_daily
     )
 
 
@@ -91,24 +86,42 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
     def __init__(
         self,
         coordinator: BlueprintDataUpdateCoordinator,
-        entity_description: SensorEntityDescription,
-        add_data: dict | None = None,
+        sensor_data: SunthalDataPoint
+        | BinarySunthalDataPoint
+        | NumberSunthalDataPoint
+        | SwitchSunthalDataPoint
+        | SensorSunthalDataPoint,
     ) -> None:
         """Initialize the sensor class."""
-        name = entity_description.name if type(entity_description.name) is str else ""
+        name = sensor_data.name if type(sensor_data.name) is str else ""
+        target_entity_id = (
+            f"{self.platform}.{slugify(coordinator.config_entry.title)}_{slugify(name)}"
+        )
+        self.entity_id = target_entity_id
+        self.name = name
         super().__init__(coordinator, name)
-        self.entity_description = entity_description
-        self.add_data = add_data if add_data else {}
+        self.sensor_data = sensor_data
+
+        # Set appropriate attributes
+        if type(sensor_data) is SensorSunthalDataPoint:
+            self._attr_state_class = sensor_data.state_class
+            self._attr_device_class = sensor_data.device_class
+        self._attr_native_unit_of_measurement = sensor_data.unit
+        self._attr_suggested_display_precision = 1
+        self.entity_registry_enabled_default = sensor_data.start_enabled
 
     def _get_sensor_data(self) -> Any:
         """Get the sensor data from coordinator."""
         if self.coordinator.data is None:
             return None
 
-        uuid_name, address = self.entity_description.key.split("--")
-        data = self.coordinator.data.get(uuid_name, {})
+        data = self.coordinator.data.get(self.sensor_data.uuid_name, {})
 
-        return data.get("obj", {}).get("lastMeasure", {}).get(address, None)
+        return (
+            data.get("obj", {})
+            .get("lastMeasure", {})
+            .get(self.sensor_data.address, None)
+        )
 
     @property
     def available(self) -> bool:
@@ -125,8 +138,8 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
 
         # Apply clamping if configured
         if value is not None:
-            clamp_min = self.add_data.get("clamp_min")
-            clamp_max = self.add_data.get("clamp_max")
+            clamp_min = self.sensor_data.clamp_min
+            clamp_max = self.sensor_data.clamp_max
 
             if clamp_min is not None and value < clamp_min:
                 LOGGER.info(
@@ -147,33 +160,39 @@ class IntegrationBlueprintSensor(IntegrationBlueprintEntity, SensorEntity):
 
 
 class IntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntity):
-    """Sensor that calculates daily integral of another sensor (like utility meter)."""
+    """Sensor that calculates the integral of another sensor (like utility meter)."""
 
     def __init__(
         self,
         hass: HomeAssistant,
-        source_entity_id: str,
-        name: str,
         coordinator: BlueprintDataUpdateCoordinator,
-        reset_daily: bool = False,
+        sensor_data: HistSensorSunthalDataPoint,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator, name)
+        super().__init__(coordinator, sensor_data.name)
         self._hass = hass
-        self._source_entity_id = source_entity_id
-        self._attr_name = name
-        self._reset_daily = reset_daily
+        self._source_entity_id = (
+            f"{sensor_data.source_entity_id.split('.')[0]}."
+            f"{slugify(coordinator.config_entry.title)}_"
+            f"{sensor_data.source_entity_id.split('.')[1]}"
+        )
+
+        self._attr_name = sensor_data.name
 
         # State tracking
         self._state = 0
         self._last_value = None
         self._last_update = None
 
+        # Race condition protection
+        self._is_updating = False
+
         # Set appropriate attributes
-        self._attr_state_class = SensorStateClass.TOTAL
-        self._attr_device_class = SensorDeviceClass.ENERGY
-        self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+        self._attr_state_class = sensor_data.state_class
+        self._attr_device_class = sensor_data.device_class
+        self._attr_native_unit_of_measurement = sensor_data.unit
         self._attr_suggested_display_precision = 1
+        self.entity_registry_enabled_default = sensor_data.start_enabled
 
     @property
     def native_value(self) -> Any:
@@ -189,6 +208,21 @@ class IntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntity):
             "last_update": self._last_update.isoformat() if self._last_update else None,
         }
 
+    def _update_integral(self, current_value: float, current_time: datetime) -> None:
+        """
+        Update integral calculation.
+
+        Note: This method must be called while holding self._update_lock
+        to prevent race conditions.
+        """
+        if self._last_value is not None and self._last_update is not None:
+            time_diff = (current_time - self._last_update).total_seconds() / 3600
+            increment = ((self._last_value + current_value) / 2) * time_diff
+            self._state += increment
+
+        self._last_value = current_value
+        self._last_update = current_time
+
     def _on_start_func_register(self) -> None:
         """Register callbacks."""
         # Track state changes of the source sensor
@@ -200,23 +234,13 @@ class IntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntity):
             )
         )
 
-        # Reset daily at midnight
-        if self._reset_daily:
-            self.async_on_remove(
-                async_track_time_change(
-                    self._hass,
-                    self._async_reset_daily,
-                    hour=0,
-                    minute=0,
-                    second=0,
-                )
-            )
-
         # Update as often as the rest of the sensors
         if self.coordinator.update_interval is None:
-            interval_mins: int = 5
+            interval_mins: int = DEFAULT_UPDATE_MIN
         else:
-            interval_mins: int = floor(self.coordinator.update_interval.seconds / 60)
+            interval_mins: int = max(
+                floor(self.coordinator.update_interval.seconds / 60), 1
+            )
 
         self.async_on_remove(
             async_track_time_interval(
@@ -225,6 +249,9 @@ class IntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntity):
                 timedelta(minutes=interval_mins),
             )
         )
+
+    def _post_process_restore(self) -> None:
+        """Post process after restoring state. Can be overridden by subclasses."""
 
     async def async_added_to_hass(self) -> None:
         """Register callbacks and restore state when entity is added."""
@@ -257,22 +284,12 @@ class IntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntity):
                             last_state.attributes["last_update"]
                         )
 
+                self._post_process_restore()
+
                 LOGGER.debug(
                     f"Restored {self.name}: state={self._state}, "
                     f"last_value={self._last_value}, last_update={self._last_update}"
                 )
-
-                # Check if we should reset (new day)
-                if self._reset_daily and self._last_update is not None:
-                    now = dt_util.now()
-                    last_date = dt_util.as_local(self._last_update).date()
-                    current_date = now.date()
-
-                    if current_date > last_date:
-                        LOGGER.debug(f"New day detected, resetting {self.name}")
-                        self._state = 0
-                        self._last_value = None
-                        self._last_update = None
 
             except (ValueError, TypeError) as ex:
                 LOGGER.warning(f"Could not restore state: {ex}")
@@ -304,48 +321,37 @@ class IntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntity):
 
         try:
             current_value = float(new_state.state)
-            current_time = dt_util.utcnow()
-
-            # Calculate integral (trapezoidal rule)
-            if self._last_value is not None and self._last_update is not None:
-                time_diff = (
-                    current_time - self._last_update
-                ).total_seconds() / 3600  # hours
-                average_value = (self._last_value + current_value) / 2
-                increment = average_value * time_diff
-
-                self._state += increment
-
-            self._last_value = current_value
-            self._last_update = current_time
-
-            self.async_write_ha_state()
-
         except ValueError:
-            LOGGER.warning("Could not convert %s to float", new_state.state)
+            LOGGER.warning(
+                "Could not convert %s to float for %s",
+                new_state.state,
+                self.name,
+            )
+            return
 
-    @callback
-    def _async_reset_daily(self, now: datetime) -> None:  # noqa: ARG002
-        """Reset the sensor at midnight."""
-        LOGGER.debug("Resetting daily integral sensor: %s", self.name)
-        self._state = 0
-        self._last_value = None
-        self._last_update = None
+        # Schedule the actual update in a coroutine to use async lock
+        self._hass.async_create_task(
+            self._async_update_with_lock(current_value, dt_util.utcnow())
+        )
 
-        # Get current value to start fresh
-        source_state = self._hass.states.get(self._source_entity_id)
-        if source_state and source_state.state not in ("unknown", "unavailable"):
-            try:
-                self._last_value = float(source_state.state)
-                self._last_update = dt_util.utcnow()
-            except ValueError:
-                pass
+    async def _async_update_with_lock(
+        self, current_value: float, current_time: datetime
+    ) -> None:
+        """Update integral with lock protection."""
+        if self._is_updating:
+            LOGGER.debug("Update already in progress for %s, skipping", self.name)
+            return
 
-        self.async_write_ha_state()
+        self._is_updating = True
+        try:
+            self._update_integral(current_value, current_time)
+            self.async_write_ha_state()
+        finally:
+            self._is_updating = False
 
     @callback
     def _async_periodic_update(self, now: datetime) -> None:  # noqa: ARG002
-        """Periodic update every 5 minutes."""
+        """Periodic update every N minutes with race condition protection."""
         # Force an update with the current source sensor value
         source_state = self._hass.states.get(self._source_entity_id)
 
@@ -354,22 +360,95 @@ class IntegralSensor(IntegrationBlueprintEntity, RestoreEntity, SensorEntity):
 
         try:
             current_value = float(source_state.state)
-            current_time = dt_util.utcnow()
+        except ValueError:
+            LOGGER.warning(
+                "Could not convert %s to float for %s",
+                source_state.state,
+                self.name,
+            )
+            return
 
-            # Calculate integral (trapezoidal rule)
-            if self._last_value is not None and self._last_update is not None:
-                time_diff = (
-                    current_time - self._last_update
-                ).total_seconds() / 3600  # hours
-                average_value = (self._last_value + current_value) / 2
-                increment = average_value * time_diff
+        # Schedule the actual update in a coroutine to use async lock
+        self._hass.async_create_task(
+            self._async_update_with_lock(current_value, dt_util.utcnow())
+        )
 
-                self._state += increment
 
-            self._last_value = current_value
-            self._last_update = current_time
+class DailyIntegralSensor(IntegralSensor):
+    """IntegralSensor that resets daily."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        coordinator: BlueprintDataUpdateCoordinator,
+        sensor_data: HistSensorSunthalDataPoint,
+        # source_entity_id: str,
+        # name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(
+            hass,
+            coordinator=coordinator,
+            sensor_data=sensor_data,
+        )
+
+    def _on_start_func_register(self) -> None:
+        """Register callbacks."""
+        super()._on_start_func_register()
+
+        # Reset daily at midnight
+        self.async_on_remove(
+            async_track_time_change(
+                self._hass,
+                self._async_reset_daily,
+                hour=0,
+                minute=0,
+                second=0,
+            )
+        )
+
+    @callback
+    def _async_reset_daily(self, now: datetime) -> None:  # noqa: ARG002
+        """Reset the sensor at midnight with race protection."""
+        # Schedule async reset to use lock
+        self._hass.async_create_task(self._async_reset_with_lock())
+
+    async def _async_reset_with_lock(self) -> None:
+        """Perform the actual reset with lock protection."""
+        if self._is_updating:
+            LOGGER.debug("Update already in progress for %s, skipping", self.name)
+            return
+
+        self._is_updating = True
+        try:
+            LOGGER.debug("Resetting daily integral sensor: %s", self.name)
+            self._state = 0
+            self._last_value = None
+            self._last_update = None
+
+            # Get current value to start fresh
+            source_state = self._hass.states.get(self._source_entity_id)
+            if source_state and source_state.state not in ("unknown", "unavailable"):
+                try:
+                    self._last_value = float(source_state.state)
+                    self._last_update = dt_util.utcnow()
+                except ValueError:
+                    pass
 
             self.async_write_ha_state()
+        finally:
+            self._is_updating = False
 
-        except ValueError:
-            LOGGER.warning("Could not convert %s to float", source_state.state)
+    def _post_process_restore(self) -> None:
+        """Reset to 0 if it's a new day."""
+        # Check if we should reset (new day)
+        if self._last_update is not None:
+            now = dt_util.now()
+            last_date = dt_util.as_local(self._last_update).date()
+            current_date = now.date()
+
+            if current_date > last_date:
+                LOGGER.debug(f"New day detected, resetting {self.name}")
+                self._state = 0
+                self._last_value = None
+                self._last_update = None

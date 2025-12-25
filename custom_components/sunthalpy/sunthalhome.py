@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from homeassistant.util import slugify
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.number import NumberDeviceClass, NumberMode
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
@@ -11,6 +12,7 @@ from homeassistant.const import (
     UnitOfPower,
     UnitOfPressure,
     UnitOfTemperature,
+    UnitOfTime,
 )
 
 BASE_URL: str = "https://cliente.sunthalpy.com:12345/api/client"
@@ -306,7 +308,7 @@ sensors: tuple[SensorSunthalDataPoint, ...] = (
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         uuid_name="other_data",
-        name="Potencia instantánea total",
+        name="Potencia instantánea eléctrica",
         address="135",
         unit=UnitOfPower.KILO_WATT,
         clamp_min=0,
@@ -407,10 +409,8 @@ hist_sensors: tuple[HistSensorSunthalDataPoint, ...] = (
         address="",
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        source_entity_id="sensor.Potencia instantanea calefaccion".replace(
-            " ", "_"
-        ).lower(),
-        reset_daily = True,
+        source_entity_id="sensor." + slugify("Potencia instantanea calefaccion"),
+        reset_daily=True,
     ),
     HistSensorSunthalDataPoint(
         device_class=SensorDeviceClass.ENERGY,
@@ -419,9 +419,7 @@ hist_sensors: tuple[HistSensorSunthalDataPoint, ...] = (
         address="",
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        source_entity_id="sensor.Potencia instantanea calefaccion".replace(
-            " ", "_"
-        ).lower(),
+        source_entity_id="sensor." + slugify("Potencia instantanea calefaccion"),
     ),
     HistSensorSunthalDataPoint(
         device_class=SensorDeviceClass.ENERGY,
@@ -430,10 +428,8 @@ hist_sensors: tuple[HistSensorSunthalDataPoint, ...] = (
         address="",
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        source_entity_id="sensor.Potencia instantanea refrigeracion".replace(
-            " ", "_"
-        ).lower(),
-        reset_daily = True,
+        source_entity_id="sensor." + slugify("Potencia instantanea refrigeracion"),
+        reset_daily=True,
     ),
     HistSensorSunthalDataPoint(
         device_class=SensorDeviceClass.ENERGY,
@@ -442,28 +438,45 @@ hist_sensors: tuple[HistSensorSunthalDataPoint, ...] = (
         address="",
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        source_entity_id="sensor.Potencia instantanea refrigeracion".replace(
-            " ", "_"
-        ).lower(),
+        source_entity_id="sensor." + slugify("Potencia instantanea refrigeracion"),
     ),
     HistSensorSunthalDataPoint(
         device_class=SensorDeviceClass.ENERGY,
         uuid_name="",
-        name="Energía total. Diario",
+        name="Energía eléctrica. Diario",
         address="",
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        source_entity_id="sensor.Consumo electrico".replace(" ", "_").lower(),
-        reset_daily = True,
+        source_entity_id="sensor." + slugify("Potencia instantanea electrica"),
+        reset_daily=True,
     ),
     HistSensorSunthalDataPoint(
         device_class=SensorDeviceClass.ENERGY,
         uuid_name="",
-        name="Energía total",
+        name="Energía eléctrica",
         address="",
         unit=UnitOfEnergy.KILO_WATT_HOUR,
         state_class=SensorStateClass.TOTAL_INCREASING,
-        source_entity_id="sensor.Potencia instantánea total".replace(" ", "_").lower(),
+        source_entity_id="sensor." + slugify("Potencia instantanea electrica"),
+    ),
+    HistSensorSunthalDataPoint(
+        device_class=SensorDeviceClass.DURATION,
+        uuid_name="",
+        name="Tiempo ON. Diario",
+        address="",
+        unit=UnitOfTime.HOURS,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        source_entity_id="sensor." + slugify("zz_is_on"),
+        reset_daily=True,
+    ),
+    HistSensorSunthalDataPoint(
+        device_class=SensorDeviceClass.DURATION,
+        uuid_name="",
+        name="Tiempo ON",
+        address="",
+        unit=UnitOfTime.HOURS,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        source_entity_id="sensor." + slugify("zz_is_on"),
     ),
 )
 
@@ -481,5 +494,10 @@ calc_sensors: tuple[SensorSunthalDataPoint, ...] = (
         uuid_name="calc_data",
         name="Estado",
         address="0001",
+    ),
+    SensorSunthalDataPoint(
+        uuid_name="calc_data",
+        name="zz_is_on",
+        address="0002",
     ),
 )

@@ -16,6 +16,7 @@ UUIDS: dict = {
 }
 HEADERS: dict = {"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}
 TIMEOUT: int = 30
+DEFAULT_UPDATE_MIN = 5
 
 
 @dataclass

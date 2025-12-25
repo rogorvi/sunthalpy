@@ -66,6 +66,7 @@ class IntegrationBlueprintApiClient:
 
     async def async_get_data(self) -> Any:
         """Get data from the API."""
+        cnt.LOGGER.debug("Getting data from the API")
         data_headers = cnt.HEADERS.copy()
         data_headers["auth"] = await self._get_token()
         data = {
@@ -98,6 +99,14 @@ class IntegrationBlueprintApiClient:
         data.setdefault("calc_data", {}).setdefault("obj", {}).setdefault(
             "lastMeasure", {}
         )["0001"] = self._get_aero_state(data, self._data)
+
+        data.setdefault("calc_data", {}).setdefault("obj", {}).setdefault(
+            "lastMeasure", {}
+        )["0002"] = (
+            0
+            if data["calc_data"]["obj"]["lastMeasure"]["0001"] == cnt.AeroModes.IDLE
+            else 1
+        )
 
         self._prev_data = self._data
         self._data = data
