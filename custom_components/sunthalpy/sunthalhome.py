@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 
-from homeassistant.util import slugify
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.number import NumberDeviceClass, NumberMode
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
@@ -14,6 +13,7 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfTime,
 )
+from homeassistant.util import slugify
 
 BASE_URL: str = "https://cliente.sunthalpy.com:12345/api/client"
 UUIDS: dict = {
