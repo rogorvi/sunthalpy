@@ -66,7 +66,7 @@ async def async_setup_entry(
             sensor_data=elem,
         )
         for elem in hist_sensors
-        if elem.reset_daily
+        if not elem.reset_daily
     )
     # Set up the history sensor platform.
     async_add_entities(
@@ -76,7 +76,7 @@ async def async_setup_entry(
             sensor_data=elem,
         )
         for elem in hist_sensors
-        if not elem.reset_daily
+        if elem.reset_daily
     )
 
 
