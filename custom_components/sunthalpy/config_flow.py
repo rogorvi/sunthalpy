@@ -57,7 +57,7 @@ class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     title=user_input[CONF_USERNAME],
                     data=user_input,
                 )
-        
+
         integration = async_get_loaded_integration(self.hass, DOMAIN)
         assert integration.documentation is not None, (  # noqa: S101
             "Integration documentation URL is not set in manifest.json"
