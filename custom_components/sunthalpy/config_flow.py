@@ -7,6 +7,7 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.loader import async_get_loaded_integration
 from slugify import slugify
 
 from .api import (
@@ -56,9 +57,17 @@ class BlueprintFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     title=user_input[CONF_USERNAME],
                     data=user_input,
                 )
+        
+        integration = async_get_loaded_integration(self.hass, DOMAIN)
+        assert integration.documentation is not None, (  # noqa: S101
+            "Integration documentation URL is not set in manifest.json"
+        )
 
         return self.async_show_form(
             step_id="user",
+            description_placeholders={
+                "documentation_url": integration.documentation,
+            },
             data_schema=vol.Schema(
                 {
                     vol.Required(
