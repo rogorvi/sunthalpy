@@ -22,8 +22,6 @@ from homeassistant.const import (
 
 from .const import (
     AERO_MODES,
-    Addr,
-    EnergyCat,
     MAX_CIRCUIT_PRESSURE_BAR,
     MAX_COP,
     MAX_EER,
@@ -37,6 +35,8 @@ from .const import (
     TEMP_MIN_C_CIRCUIT,
     TEMP_MIN_C_INDOOR,
     TEMP_MIN_C_OUTDOOR,
+    Addr,
+    EnergyCat,
 )
 
 if TYPE_CHECKING:
@@ -117,7 +117,8 @@ class SunthalpyNumberPoint(SunthalpyPoint):
 
 @dataclass(frozen=True, kw_only=True)
 class SunthalpyEnergyPoint:
-    """Descriptor for an accumulated energy / runtime sensor.
+    """
+    Descriptor for an accumulated energy / runtime sensor.
 
     Energy points come in pairs (daily and total). The ``daily`` flag
     selects which of the two coordinator-side accumulators to read.
