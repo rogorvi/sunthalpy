@@ -16,24 +16,24 @@ from homeassistant.util import dt as dt_util
 
 from .api import (
     SunthalpyApiAuthenticationError,
-    SunthalpyApiError,
     SunthalpyApiClient,
+    SunthalpyApiError,
 )
 from .const import (
     ACS_RETURN_OFFSET_C,
     ACTIVE_MODES,
-    Addr,
-    AeroMode,
     CALC_BUCKET,
     DEFAULT_SCAN_INTERVAL_S,
     DOMAIN,
-    EnergyCat,
     LOGGER,
     MAX_ELECTRIC_POWER_KW,
     MAX_THERMAL_POWER_KW,
     PENDING_WRITE_POLLS,
     STORAGE_KEY_FMT,
     STORAGE_VERSION,
+    Addr,
+    AeroMode,
+    EnergyCat,
     is_truthy,
 )
 from .data import (
@@ -52,7 +52,8 @@ if TYPE_CHECKING:
 
 
 class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
-    """Fetch, sanitise, and integrate Sunthalpy data.
+    """
+    Fetch, sanitise, and integrate Sunthalpy data.
 
     The coordinator is responsible for the integration's whole "data
     pipeline":
@@ -201,7 +202,8 @@ class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         *,
         value: bool,
     ) -> None:
-        """Push a switch change to the API and reflect it in the UI immediately.
+        """
+        Push a switch change to the API and reflect it in the UI immediately.
 
         We do not call :meth:`async_request_refresh` here on purpose. The
         API takes a few seconds to start returning the new value, so an
@@ -250,7 +252,8 @@ class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self,
         buckets: dict[str, dict[str, Any]],
     ) -> dict[str, dict[str, Any]]:
-        """Override polled values with still-pending optimistic writes.
+        """
+        Override polled values with still-pending optimistic writes.
 
         Pending writes that the API has caught up with (or that have
         outlived their TTL) are dropped. The rest are written into the
@@ -315,7 +318,8 @@ class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self,
         raw: dict[str, dict[str, Any]],
     ) -> dict[str, dict[str, Any]]:
-        """Apply per-address clamps to discard implausible readings.
+        """
+        Apply per-address clamps to discard implausible readings.
 
         Anything outside the configured physical range (set in
         :mod:`.data`) is replaced with ``None`` so HA reports the entity
@@ -370,7 +374,8 @@ class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @staticmethod
     def _dew_point(temp: Any, humidity: Any) -> float | None:
-        """Return dew point (°C) using the Magnus-Tetens approximation.
+        """
+        Return dew point (°C) using the Magnus-Tetens approximation.
 
         ``temp`` is in °C and ``humidity`` is in %. ``None`` is returned
         for missing or implausible inputs.
@@ -397,14 +402,15 @@ class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         target_heat = other.get(Addr.SETPOINT_HEAT)
         is_winter_raw = other.get(Addr.WINTER_MODE_ONLINE)
         dg1_raw = other.get(Addr.BUS_DEMAND_DG1)
+        aero_mode = AeroMode.UNKNOWN
 
         if pot_heat is None or pot_cool is None:
-            return AeroMode.UNKNOWN
-        if pot_heat == 0 and pot_cool == 0:
-            return AeroMode.IDLE
-        if pot_cool > 0:
-            return AeroMode.COOLING
-        if pot_heat > 0:
+            aero_mode = AeroMode.UNKNOWN
+        elif pot_heat == 0 and pot_cool == 0:
+            aero_mode = AeroMode.IDLE
+        elif pot_cool > 0:
+            aero_mode = AeroMode.COOLING
+        elif pot_heat > 0:
             if (
                 return_temp is None
                 or target_heat is None
@@ -422,7 +428,7 @@ class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     else AeroMode.ACS_COOLING_WAITING
                 )
             return AeroMode.ACS
-        return AeroMode.UNKNOWN
+        return aero_mode
 
     # ------------------------------------------------------------------
     # Energy integration
@@ -455,7 +461,8 @@ class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         buckets: dict[str, dict[str, Any]],
         mode: str,
     ) -> None:
-        """Run one trapezoidal-integration step over the new sample.
+        """
+        Run one trapezoidal-integration step over the new sample.
 
         Powers are read from the (already clamped) buckets. Any sample
         that is missing or wildly out of range is treated as zero — that

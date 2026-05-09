@@ -91,7 +91,8 @@ class SunthalpyValueSensor(SunthalpyEntity, SensorEntity):
 
 
 class SunthalpyEnergySensor(SunthalpyEntity, SensorEntity):
-    """Sensor backed by a coordinator-side energy / runtime accumulator.
+    """
+    Sensor backed by a coordinator-side energy / runtime accumulator.
 
     Daily sensors expose ``last_reset`` so that Home Assistant draws their
     long-term statistics as a recurring cycle.

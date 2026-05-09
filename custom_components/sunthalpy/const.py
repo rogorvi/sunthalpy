@@ -7,7 +7,8 @@ from typing import Any, Final
 
 
 def is_truthy(value: Any) -> bool:
-    """Return ``True`` if ``value`` represents a "set" boolean state.
+    """
+    Return ``True`` if ``value`` represents a "set" boolean state.
 
     The Sunthalpy API uses ``0/1``, ``"0"/"1"``, ``True/False``, and
     occasionally string variants of ``on``/``off`` to encode booleans, so
@@ -46,7 +47,7 @@ PENDING_WRITE_POLLS: Final = 2
 
 # Set of values the API uses to mean "true" for boolean addresses.
 TRUTHY_VALUES: Final[frozenset[Any]] = frozenset(
-    {True, 1, "1", "true", "True", "TRUE", "on", "ON", "On"},
+    {True, "1", "true", "True", "TRUE", "on", "ON", "On"},
 )
 
 # UUIDs identifying which "device" the data belongs to in the API
@@ -171,7 +172,7 @@ class Addr:
     BUS_PROGRAM: Final = "5188"
     BUS_PUMP_ON: Final = "5257"
 
-    # calc_data (synthetic)
+    # calc data (synthetic)
     DEW_POINT: Final = "0000"
     AERO_STATE: Final = "0001"
     IS_ON: Final = "0002"
