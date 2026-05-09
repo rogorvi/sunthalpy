@@ -35,7 +35,8 @@ def _verify_response_or_raise(response: aiohttp.ClientResponse) -> None:
 
 
 class SunthalpyApiClient:
-    """Async client for the Sunthalpy cloud API.
+    """
+    Async client for the Sunthalpy cloud API.
 
     The API is a JSON-over-HTTPS service that requires a per-call bearer
     token obtained from a login endpoint. This client caches no state and
@@ -59,7 +60,8 @@ class SunthalpyApiClient:
         await self._get_token()
 
     async def async_get_data(self) -> dict[str, dict[str, Any]]:
-        """Fetch the latest measurements for every UUID bucket.
+        """
+        Fetch the latest measurements for every UUID bucket.
 
         Returns
         -------
