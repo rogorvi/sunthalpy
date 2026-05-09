@@ -72,7 +72,8 @@ class SunthalpyNumber(SunthalpyEntity, NumberEntity):
             return None
 
     async def async_set_native_value(self, value: float) -> None:
-        """Push a new value to the device.
+        """
+        Push a new value to the device.
 
         The heating min/max setpoints share an invariant: ``min < max``.
         If the requested change would violate it, we adjust the partner
