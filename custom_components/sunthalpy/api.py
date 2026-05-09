@@ -1,45 +1,47 @@
-"""Sample API Client."""
+"""HTTP client for the Sunthalpy cloud API."""
 
 from __future__ import annotations
 
 import socket
-from math import log
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 import async_timeout
 
-from . import const as cnt
+from .const import BASE_URL, HEADERS, HTTP_TIMEOUT_S, LOGGER, UUIDS
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
-class IntegrationBlueprintApiClientError(Exception):
-    """Exception to indicate a general API error."""
+class SunthalpyApiError(Exception):
+    """Base class for Sunthalpy API errors."""
 
 
-class IntegrationBlueprintApiClientCommunicationError(
-    IntegrationBlueprintApiClientError,
-):
-    """Exception to indicate a communication error."""
+class SunthalpyApiCommunicationError(SunthalpyApiError):
+    """Raised on network / transport-level failures."""
 
 
-class IntegrationBlueprintApiClientAuthenticationError(
-    IntegrationBlueprintApiClientError,
-):
-    """Exception to indicate an authentication error."""
+class SunthalpyApiAuthenticationError(SunthalpyApiError):
+    """Raised when credentials are rejected by the API."""
 
 
 def _verify_response_or_raise(response: aiohttp.ClientResponse) -> None:
-    """Verify that the response is valid."""
+    """Map HTTP status codes to typed exceptions."""
     if response.status in (401, 403):
         msg = "Invalid credentials"
-        raise IntegrationBlueprintApiClientAuthenticationError(
-            msg,
-        )
+        raise SunthalpyApiAuthenticationError(msg)
     response.raise_for_status()
 
 
-class IntegrationBlueprintApiClient:
-    """Sample API Client."""
+class SunthalpyApiClient:
+    """Async client for the Sunthalpy cloud API.
+
+    The API is a JSON-over-HTTPS service that requires a per-call bearer
+    token obtained from a login endpoint. This client caches no state and
+    fetches a fresh token for every batch of calls; that keeps it robust
+    against silent token expiry at the cost of one extra request per poll.
+    """
 
     def __init__(
         self,
@@ -47,268 +49,134 @@ class IntegrationBlueprintApiClient:
         password: str,
         session: aiohttp.ClientSession,
     ) -> None:
-        """Sample API Client."""
+        """Initialise the client with credentials and an aiohttp session."""
         self._username = username
         self._password = password
         self._session = session
-        self._data: dict | None = None
-        self._prev_data: dict | None = None
 
-    async def _get_token(self) -> str:
-        """Get token from the API."""
-        token_data = await self._api_wrapper(
-            method="post",
-            url=f"{cnt.BASE_URL}/login",
-            data={"email": self._username, "pass": self._password},
-            headers=cnt.HEADERS,
-        )
-        return token_data["obj"]["token"]
+    async def async_validate_credentials(self) -> None:
+        """Attempt a login round-trip; used by the config flow."""
+        await self._get_token()
 
-    async def async_get_data(self) -> Any:
-        """Get data from the API."""
-        cnt.LOGGER.debug("Getting data from the API")
-        data_headers = cnt.HEADERS.copy()
-        data_headers["auth"] = await self._get_token()
-        data = {
-            uuid_name: await self._api_wrapper(
-                method="post",
-                url=f"{cnt.BASE_URL}/get/device-data/last",
-                data={"uuid": uuid},
-                headers=data_headers,
+    async def async_get_data(self) -> dict[str, dict[str, Any]]:
+        """Fetch the latest measurements for every UUID bucket.
+
+        Returns
+        -------
+        dict
+            Mapping ``{<bucket name>: {<address>: <value>}}`` for every
+            bucket configured in ``UUIDS``. Raises on transport / auth
+            errors so the caller (the coordinator) can surface them.
+
+        """
+        LOGGER.debug("Fetching Sunthalpy data")
+        token = await self._get_token()
+        out: dict[str, dict[str, Any]] = {}
+        for bucket_name, uuid in UUIDS.items():
+            payload = await self._post(
+                "/get/device-data/last",
+                token,
+                {"uuid": uuid},
             )
-            for uuid_name, uuid in cnt.UUIDS.items()
-        }
+            last_measure = (
+                payload.get("obj", {}).get("lastMeasure", {})
+                if isinstance(payload, dict)
+                else {}
+            )
+            out[bucket_name] = dict(last_measure)
+        return out
 
-        temp: float = (
-            data.get("main_data", {})
-            .get("obj", {})
-            .get("lastMeasure", {})
-            .get("103", None)
+    async def async_set_switch(
+        self,
+        bucket_name: str,
+        address: str,
+        *,
+        value: bool,
+    ) -> Any:
+        """Set a boolean device address on the given bucket."""
+        return await self._send_command(bucket_name, address, value)
+
+    async def async_set_number(
+        self,
+        bucket_name: str,
+        address: str,
+        value: float,
+    ) -> Any:
+        """Set a numeric device address (rounded to 1 decimal)."""
+        return await self._send_command(bucket_name, address, round(value, 1))
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+    async def _get_token(self) -> str:
+        """Authenticate and return a fresh bearer token."""
+        body = await self._raw_request(
+            "post",
+            f"{BASE_URL}/login",
+            data={"email": self._username, "pass": self._password},
+            headers=HEADERS,
         )
-        humidity: float = (
-            data.get("main_data", {})
-            .get("obj", {})
-            .get("lastMeasure", {})
-            .get("102", None)
-        )
+        token = (body or {}).get("obj", {}).get("token")
+        if not isinstance(token, str) or not token:
+            msg = "Login response did not contain a token"
+            raise SunthalpyApiAuthenticationError(msg)
+        return token
 
-        data.setdefault("calc_data", {}).setdefault("obj", {}).setdefault(
-            "lastMeasure", {}
-        )["0000"] = self._get_dew_point(temp, humidity)
-
-        data.setdefault("calc_data", {}).setdefault("obj", {}).setdefault(
-            "lastMeasure", {}
-        )["0001"] = self._get_aero_state(data, self._data)
-
-        data.setdefault("calc_data", {}).setdefault("obj", {}).setdefault(
-            "lastMeasure", {}
-        )["0002"] = (
-            0
-            if data["calc_data"]["obj"]["lastMeasure"]["0001"] == cnt.AeroModes.IDLE
-            else 1
-        )
-
-        self._prev_data = self._data
-        self._data = data
-
-        return data
-
-    def get_pot_cool(self, data: dict) -> float | None:
-        """Get Potencia instantánea refrigeración."""
-        return (
-            data.get("other_data", {})
-            .get("obj", {})
-            .get("lastMeasure", {})
-            .get("134", None)
-        )
-
-    def get_pot_heat(self, data: dict) -> float | None:
-        """Get Potencia instantánea calefacción."""
-        return (
-            data.get("other_data", {})
-            .get("obj", {})
-            .get("lastMeasure", {})
-            .get("133", None)
-        )
-
-    def get_acs_temp(self, data: dict) -> float | None:
-        """Get Temp. ACS."""
-        return (
-            data.get("other_data", {})
-            .get("obj", {})
-            .get("lastMeasure", {})
-            .get("11", None)
+    async def _post(
+        self,
+        path: str,
+        token: str,
+        data: Mapping[str, Any],
+    ) -> Any:
+        """POST ``data`` to ``path`` using ``token`` as auth header."""
+        headers = {**HEADERS, "auth": token}
+        return await self._raw_request(
+            "post",
+            f"{BASE_URL}{path}",
+            data=dict(data),
+            headers=headers,
         )
 
-    def get_dg1(self, data: dict) -> float | None:
-        """Get Bus Demanda DG1."""
-        return (
-            data.get("other_data", {})
-            .get("obj", {})
-            .get("lastMeasure", {})
-            .get("5183", None)
-        )
-
-    def get_target_heat_temp(self, data: dict) -> float | None:
-        """Get Consigna temp. calefacción."""
-        return (
-            data.get("other_data", {})
-            .get("obj", {})
-            .get("lastMeasure", {})
-            .get("170", None)
-        )
-
-    def get_return_heat_temp_int(self, data: dict) -> float | None:
-        """Get Consigna temp. calefacción."""
-        return (
-            data.get("other_data", {})
-            .get("obj", {})
-            .get("lastMeasure", {})
-            .get("2", None)
-        )
-
-    def get_is_winter(self, data: dict) -> float | None:
-        """Get Bus Demanda DG1."""
-        return (
-            data.get("other_data", {})
-            .get("obj", {})
-            .get("lastMeasure", {})
-            .get("202", None)
-        )
-
-    def _get_aero_state(self, data: dict | None, prev_data: dict | None) -> str:
-        """Find the aerothermal device sate."""
-        if prev_data is None or data is None:
-            return cnt.AeroModes.IDLE
-
-        pot_cool = self.get_pot_cool(data)
-        pot_heat = self.get_pot_heat(data)
-        acs_now = self.get_acs_temp(data)
-        is_winter = self.get_is_winter(data)
-        dg1 = self.get_dg1(data)
-        target_heat = self.get_target_heat_temp(data)
-        temp_return = self.get_return_heat_temp_int(data)
-
-        # If current or prev data are not available, return idle state
-        if (
-            pot_cool is None
-            or pot_heat is None
-            or acs_now is None
-            or target_heat is None
-            or temp_return is None
-        ):
-            return cnt.AeroModes.IDLE
-
-        dg1_active: bool = str(dg1) == "1"
-
-        # If there is no cooling nor heating energy, return idle
-        if pot_cool == 0 and pot_heat == 0:
-            return cnt.AeroModes.IDLE
-        # If there is cooling energy return cooling
-        if pot_cool > 0:
-            return cnt.AeroModes.COOLING
-        # If there is heating energy we need to check if it's ACS
-        if pot_heat > 0:
-            if temp_return > target_heat + 5:
-                mode = cnt.AeroModes.ACS
-                # Since ACS has priority over heating and cooling
-                # we check if those are waiting
-                if dg1_active:
-                    waiting_mode = (
-                        # is_winter defines the waiting enery mode
-                        cnt.AeroModes.HEATING if is_winter else cnt.AeroModes.COOLING
-                    )
-                    mode += cnt.AeroModes.MODE_WAITING.format(waiting_mode)
-            else:
-                # If there is no ACS, then we are heating
-                mode = cnt.AeroModes.HEATING
-            return mode
-
-        # Catch states not considered above
-        return cnt.AeroModes.UNKNOWN
-
-    def _get_dew_point(self, temp: float, humidity: float) -> float | None:
-        """
-        Calculate dew point based on temperature and humidity inputs.
-
-        temp in Celsius. humidity in %.
-        """
-        if not temp or not humidity:
-            return None
-
-        b = 17.625
-        c = 243.04
-        gamma = log(humidity / 100) + (b * temp) / (c + temp)
-        return round(c * gamma / (b - gamma), 1)
-
-    async def _switch(self, uuid: str, address: str, *, set_to: bool) -> Any:
-        """Set switch status."""
-        data_headers = cnt.HEADERS.copy()
-        data_headers["auth"] = await self._get_token()
-        return await self._api_wrapper(
-            method="post",
-            url=f"{cnt.BASE_URL}/send/device/command",
-            data={
-                "uuid": cnt.UUIDS[uuid],
-                "value": set_to,
-                "deviceInternalAddress": address,
-            },
-            headers=data_headers,
-        )
-
-    async def async_switch_on(self, uuid: str, address: str) -> Any:
-        """Turn on the switch."""
-        return await self._switch(uuid, address, set_to=True)
-
-    async def async_switch_off(self, uuid: str, address: str) -> Any:
-        """Turn off the switch."""
-        return await self._switch(uuid, address, set_to=False)
-
-    async def async_update_number(self, uuid: str, address: str, value: float) -> Any:
-        """Turn off the switch."""
-        # Set switch status
-        data_headers = cnt.HEADERS.copy()
-        data_headers["auth"] = await self._get_token()
-        data = {
-            "uuid": cnt.UUIDS[uuid],
-            "value": round(value, 1),
+    async def _send_command(
+        self,
+        bucket_name: str,
+        address: str,
+        value: Any,
+    ) -> Any:
+        """Send a write command to a device address."""
+        if bucket_name not in UUIDS:
+            msg = f"Unknown bucket name: {bucket_name}"
+            raise SunthalpyApiError(msg)
+        token = await self._get_token()
+        payload = {
+            "uuid": UUIDS[bucket_name],
+            "value": value,
             "deviceInternalAddress": address,
         }
-        return await self._api_wrapper(
-            method="post",
-            url=f"{cnt.BASE_URL}/send/device/command",
-            data=data,
-            headers=data_headers,
-        )
+        return await self._post("/send/device/command", token, payload)
 
-    async def _api_wrapper(
+    async def _raw_request(
         self,
         method: str,
         url: str,
         data: dict | None = None,
         headers: dict | None = None,
     ) -> Any:
-        """Get information from the API."""
+        """Execute an HTTP request and translate failures to typed errors."""
         try:
-            async with async_timeout.timeout(10):
+            async with async_timeout.timeout(HTTP_TIMEOUT_S):
                 response = await self._session.request(
-                    method=method, url=url, headers=headers, json=data, ssl=False
+                    method=method,
+                    url=url,
+                    headers=headers,
+                    json=data,
+                    ssl=False,
                 )
                 _verify_response_or_raise(response)
                 return await response.json()
-
-        except TimeoutError as exception:
-            msg = f"Timeout error fetching information - {exception}"
-            raise IntegrationBlueprintApiClientCommunicationError(
-                msg,
-            ) from exception
-        except (aiohttp.ClientError, socket.gaierror) as exception:
-            msg = f"Error fetching information - {exception}"
-            raise IntegrationBlueprintApiClientCommunicationError(
-                msg,
-            ) from exception
-        except Exception as exception:  # pylint: disable=broad-except
-            msg = f"Something really wrong happened! - {exception}"
-            raise IntegrationBlueprintApiClientError(
-                msg,
-            ) from exception
+        except TimeoutError as exc:
+            msg = f"Timeout contacting Sunthalpy API: {exc}"
+            raise SunthalpyApiCommunicationError(msg) from exc
+        except (aiohttp.ClientError, socket.gaierror) as exc:
+            msg = f"Network error contacting Sunthalpy API: {exc}"
+            raise SunthalpyApiCommunicationError(msg) from exc

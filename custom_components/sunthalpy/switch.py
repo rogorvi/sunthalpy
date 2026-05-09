@@ -1,92 +1,74 @@
-"""Switch platform for integration_blueprint."""
+"""Switch platform for the Sunthalpy integration."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
-from homeassistant.helpers.event import async_call_later
+from homeassistant.components.switch import SwitchEntity
 
-from .entity import IntegrationBlueprintEntity
-from .sunthalhome import switches
+from .const import is_truthy
+from .data import SWITCHES
+from .entity import SunthalpyEntity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-    from .coordinator import BlueprintDataUpdateCoordinator
-    from .data import IntegrationBlueprintConfigEntry
-
-ENTITY_DESCRIPTIONS = tuple(
-    SwitchEntityDescription(
-        key=f"{elem.uuid_name}--{elem.address}",
-        name=elem.name,
-        device_class=elem.device_class,
-        entity_registry_enabled_default=elem.start_enabled,
-        icon=elem.icon,
-    )
-    for elem in switches
-)
+    from .coordinator import SunthalpyDataUpdateCoordinator
+    from .data import SunthalpyConfigEntry, SunthalpySwitchPoint
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,  # noqa: ARG001 Unused function argument: `hass`
-    entry: IntegrationBlueprintConfigEntry,
+    hass: HomeAssistant,  # noqa: ARG001
+    entry: SunthalpyConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the switch platform."""
+    """Register every switch for this entry."""
+    coordinator = entry.runtime_data.coordinator
     async_add_entities(
-        IntegrationBlueprintSwitch(
-            coordinator=entry.runtime_data.coordinator,
-            entity_description=entity_description,
-        )
-        for entity_description in ENTITY_DESCRIPTIONS
+        SunthalpySwitch(coordinator, point) for point in SWITCHES
     )
 
 
-class IntegrationBlueprintSwitch(IntegrationBlueprintEntity, SwitchEntity):
-    """integration_blueprint switch class."""
+class SunthalpySwitch(SunthalpyEntity, SwitchEntity):
+    """Switch that writes a boolean to a Sunthalpy device address."""
 
     def __init__(
         self,
-        coordinator: BlueprintDataUpdateCoordinator,
-        entity_description: SwitchEntityDescription,
+        coordinator: SunthalpyDataUpdateCoordinator,
+        point: SunthalpySwitchPoint,
     ) -> None:
-        """Initialize the switch class."""
-        name = entity_description.name if type(entity_description.name) is str else ""
-        super().__init__(coordinator, name)
-        self.entity_description = entity_description
+        """Initialise from a descriptor."""
+        super().__init__(coordinator, point.unique_suffix)
+        self._point = point
+        self._attr_translation_key = point.unique_suffix
+        self._attr_device_class = point.device_class
+        self._attr_icon = point.icon
+        self._attr_entity_category = point.entity_category
+        self._attr_entity_registry_enabled_default = point.enabled_by_default
 
     @property
-    def is_on(self) -> bool:
-        """Return the native value of the sensor."""
-        uuid, address = self.entity_description.key.split("--")
-        data = self.coordinator.data.get(uuid, {})
-        return (
-            data.get("obj", {})
-            .get("lastMeasure", {})
-            .get(
-                address,
-                None,
-            )
+    def is_on(self) -> bool | None:
+        """Return whether the switch is currently on."""
+        data = self.coordinator.data or {}
+        bucket = data.get("buckets", {}).get(self._point.bucket, {})
+        value = bucket.get(self._point.address)
+        if value is None:
+            return None
+        return is_truthy(value)
+
+    async def async_turn_on(self, **kwargs: Any) -> None:  # noqa: ARG002
+        """Turn the switch on via the API."""
+        await self.coordinator.async_set_switch(
+            self._point.bucket,
+            self._point.address,
+            value=True,
         )
 
-    async def async_turn_on(self, **_: Any) -> None:
-        """Turn on the switch."""
-        uuid, address = self.entity_description.key.split("--")
-        await self.coordinator.config_entry.runtime_data.client.async_switch_on(
-            uuid, address
+    async def async_turn_off(self, **kwargs: Any) -> None:  # noqa: ARG002
+        """Turn the switch off via the API."""
+        await self.coordinator.async_set_switch(
+            self._point.bucket,
+            self._point.address,
+            value=False,
         )
-        async_call_later(self.hass, 5, self._scheduled_refresh)
-
-    async def async_turn_off(self, **_: Any) -> None:
-        """Turn off the switch."""
-        uuid, address = self.entity_description.key.split("--")
-        await self.coordinator.config_entry.runtime_data.client.async_switch_off(
-            uuid, address
-        )
-        async_call_later(self.hass, 5, self._scheduled_refresh)
-
-    async def _scheduled_refresh(self, _now=None) -> None:  # noqa: ANN001
-        """Handle scheduled refresh."""
-        await self.coordinator.async_request_refresh()

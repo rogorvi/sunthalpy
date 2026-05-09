@@ -1,74 +1,67 @@
-"""Binary sensor platform for integration_blueprint."""
+"""Binary sensor platform for the Sunthalpy integration."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from homeassistant.components.binary_sensor import (
-    BinarySensorEntity,
-    BinarySensorEntityDescription,
-)
+from homeassistant.components.binary_sensor import BinarySensorEntity
 
-from .entity import IntegrationBlueprintEntity
-from .sunthalhome import binary_sensors
+from .const import is_truthy
+from .data import BINARY_SENSORS
+from .entity import SunthalpyEntity
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-    from .coordinator import BlueprintDataUpdateCoordinator
-    from .data import IntegrationBlueprintConfigEntry
-
-ENTITY_DESCRIPTIONS = tuple(
-    BinarySensorEntityDescription(
-        key=f"{elem.uuid_name}--{elem.address}",
-        name=elem.name,
-        device_class=elem.device_class,
-        entity_registry_enabled_default=elem.start_enabled,
-        icon=elem.icon,
-    )
-    for elem in binary_sensors
-)
+    from .coordinator import SunthalpyDataUpdateCoordinator
+    from .data import SunthalpyBinaryPoint, SunthalpyConfigEntry
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,  # noqa: ARG001 Unused function argument: `hass`
-    entry: IntegrationBlueprintConfigEntry,
+    hass: HomeAssistant,  # noqa: ARG001
+    entry: SunthalpyConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the binary_sensor platform."""
+    """Register every binary sensor for this entry."""
+    coordinator = entry.runtime_data.coordinator
     async_add_entities(
-        IntegrationBlueprintBinarySensor(
-            coordinator=entry.runtime_data.coordinator,
-            entity_description=entity_description,
-        )
-        for entity_description in ENTITY_DESCRIPTIONS
+        SunthalpyBinarySensor(coordinator, point) for point in BINARY_SENSORS
     )
 
 
-class IntegrationBlueprintBinarySensor(IntegrationBlueprintEntity, BinarySensorEntity):
-    """integration_blueprint binary_sensor class."""
+class SunthalpyBinarySensor(SunthalpyEntity, BinarySensorEntity):
+    """Binary sensor backed by a single (bucket, address) value."""
 
     def __init__(
         self,
-        coordinator: BlueprintDataUpdateCoordinator,
-        entity_description: BinarySensorEntityDescription,
+        coordinator: SunthalpyDataUpdateCoordinator,
+        point: SunthalpyBinaryPoint,
     ) -> None:
-        """Initialize the binary_sensor class."""
-        name = entity_description.name if type(entity_description.name) is str else ""
-        super().__init__(coordinator, name)
-        self.entity_description = entity_description
+        """Initialise from a descriptor."""
+        super().__init__(coordinator, point.unique_suffix)
+        self._point = point
+        self._attr_translation_key = point.unique_suffix
+        self._attr_device_class = point.device_class
+        self._attr_icon = point.icon
+        self._attr_entity_category = point.entity_category
+        self._attr_entity_registry_enabled_default = point.enabled_by_default
 
     @property
-    def is_on(self) -> bool:
-        """Return the native value of the sensor."""
-        uuid, address = self.entity_description.key.split("--")
-        data = self.coordinator.data.get(uuid, {})
-        return (
-            data.get("obj", {})
-            .get("lastMeasure", {})
-            .get(
-                address,
-                None,
-            )
-        )
+    def is_on(self) -> bool | None:
+        """Return ``True`` if the address resolves to a truthy value."""
+        data = self.coordinator.data or {}
+        bucket = data.get("buckets", {}).get(self._point.bucket, {})
+        value = bucket.get(self._point.address)
+        if value is None:
+            return None
+        return is_truthy(value)
+
+    @property
+    def available(self) -> bool:
+        """Mirror the coordinator's availability state."""
+        if not super().available:
+            return False
+        data = self.coordinator.data or {}
+        bucket = data.get("buckets", {}).get(self._point.bucket, {})
+        return bucket.get(self._point.address) is not None

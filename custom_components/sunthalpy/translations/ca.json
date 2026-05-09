@@ -1,0 +1,199 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Introdueix les credencials del teu compte de Sunthalpy.",
+        "data": {
+          "username": "Correu electrònic",
+          "password": "Contrasenya"
+        }
+      }
+    },
+    "error": {
+      "auth": "El correu o la contrasenya són incorrectes.",
+      "connection": "No es pot contactar amb el servidor de Sunthalpy.",
+      "unknown": "S'ha produït un error desconegut."
+    },
+    "abort": {
+      "already_configured": "Aquest compte ja està configurat."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "alarm": {
+        "name": "Alarma"
+      },
+      "running": {
+        "name": "En funcionament"
+      },
+      "ngrok_online": {
+        "name": "Ngrok connectat"
+      },
+      "summer_mode_online": {
+        "name": "Mode estiu en línia"
+      },
+      "winter_mode_online": {
+        "name": "Mode hivern en línia"
+      }
+    },
+    "number": {
+      "temperature_min": {
+        "name": "Temperatura mínima"
+      },
+      "temperature_max": {
+        "name": "Temperatura màxima"
+      }
+    },
+    "sensor": {
+      "indoor_temperature": {
+        "name": "Temperatura interior"
+      },
+      "indoor_humidity": {
+        "name": "Humitat interior"
+      },
+      "outdoor_temperature": {
+        "name": "Temperatura exterior"
+      },
+      "indoor_supply_temperature": {
+        "name": "Temperatura impulsió interior"
+      },
+      "indoor_return_temperature": {
+        "name": "Temperatura retorn interior"
+      },
+      "outdoor_supply_temperature": {
+        "name": "Temperatura impulsió exterior"
+      },
+      "outdoor_return_temperature": {
+        "name": "Temperatura retorn exterior"
+      },
+      "dhw_temperature": {
+        "name": "Temperatura ACS"
+      },
+      "circuit_pressure": {
+        "name": "Pressió circuit"
+      },
+      "power_heating": {
+        "name": "Potència calefacció"
+      },
+      "power_cooling": {
+        "name": "Potència refrigeració"
+      },
+      "power_electric": {
+        "name": "Potència elèctrica"
+      },
+      "cop": {
+        "name": "COP"
+      },
+      "eer": {
+        "name": "EER"
+      },
+      "setpoint_dhw": {
+        "name": "Consigna ACS"
+      },
+      "setpoint_heating": {
+        "name": "Consigna calefacció"
+      },
+      "setpoint_cooling": {
+        "name": "Consigna refrigeració"
+      },
+      "compressor_rpm": {
+        "name": "RPM compressor"
+      },
+      "bus_demand_dhw": {
+        "name": "Bus demanda ACS"
+      },
+      "bus_demand_dg1": {
+        "name": "Bus demanda DG1"
+      },
+      "bus_program": {
+        "name": "Bus programa"
+      },
+      "bus_pump_on": {
+        "name": "Bus bomba de calor ON"
+      },
+      "indoor_dew_point": {
+        "name": "Punt de rosada interior"
+      },
+      "aerothermal_state": {
+        "name": "Estat aerotèrmia",
+        "state": {
+          "idle": "En repòs",
+          "cooling": "Refrigerant",
+          "heating": "Calefactant",
+          "acs": "ACS",
+          "acs_heating_waiting": "ACS, calefacció en espera",
+          "acs_cooling_waiting": "ACS, refrigeració en espera",
+          "unknown": "Desconegut"
+        }
+      },
+      "thermal_heat_total_daily": {
+        "name": "Energia tèrmica calefacció (avui)"
+      },
+      "thermal_heat_total_total": {
+        "name": "Energia tèrmica calefacció"
+      },
+      "thermal_cool_total_daily": {
+        "name": "Energia tèrmica refrigeració (avui)"
+      },
+      "thermal_cool_total_total": {
+        "name": "Energia tèrmica refrigeració"
+      },
+      "thermal_heat_heating_mode_daily": {
+        "name": "Energia tèrmica per a calefacció (avui)"
+      },
+      "thermal_heat_heating_mode_total": {
+        "name": "Energia tèrmica per a calefacció"
+      },
+      "thermal_heat_acs_daily": {
+        "name": "Energia tèrmica per a ACS (avui)"
+      },
+      "thermal_heat_acs_total": {
+        "name": "Energia tèrmica per a ACS"
+      },
+      "thermal_cool_cooling_mode_daily": {
+        "name": "Energia tèrmica per a refrigeració (avui)"
+      },
+      "thermal_cool_cooling_mode_total": {
+        "name": "Energia tèrmica per a refrigeració"
+      },
+      "electric_total_daily": {
+        "name": "Energia elèctrica (avui)"
+      },
+      "electric_total_total": {
+        "name": "Energia elèctrica"
+      },
+      "electric_heating_daily": {
+        "name": "Energia elèctrica per a calefacció (avui)"
+      },
+      "electric_heating_total": {
+        "name": "Energia elèctrica per a calefacció"
+      },
+      "electric_cooling_daily": {
+        "name": "Energia elèctrica per a refrigeració (avui)"
+      },
+      "electric_cooling_total": {
+        "name": "Energia elèctrica per a refrigeració"
+      },
+      "electric_acs_daily": {
+        "name": "Energia elèctrica per a ACS (avui)"
+      },
+      "electric_acs_total": {
+        "name": "Energia elèctrica per a ACS"
+      },
+      "runtime_daily": {
+        "name": "Temps de funcionament (avui)"
+      },
+      "runtime_total": {
+        "name": "Temps de funcionament"
+      }
+    },
+    "switch": {
+      "winter_mode": {
+        "name": "Mode hivern"
+      },
+      "at_home": {
+        "name": "A casa"
+      }
+    }
+  }
+}

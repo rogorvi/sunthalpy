@@ -1,21 +1,199 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "description": "If you need help with the configuration have a look here: {documentation_url}",
-                    "data": {
-                    "username": "Username",
-                    "password": "Password"
-                }
-            }
-        },
-        "error": {
-            "auth": "Username/Password is wrong.",
-            "connection": "Unable to connect to the server.",
-            "unknown": "Unknown error occurred."
-        },
-        "abort": {
-            "already_configured": "This entry is already configured."
+  "config": {
+    "step": {
+      "user": {
+        "description": "Enter the credentials of your Sunthalpy account.",
+        "data": {
+          "username": "Email",
+          "password": "Password"
         }
+      }
+    },
+    "error": {
+      "auth": "The email or password is incorrect.",
+      "connection": "Cannot reach the Sunthalpy server.",
+      "unknown": "An unknown error occurred."
+    },
+    "abort": {
+      "already_configured": "This account is already configured."
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "alarm": {
+        "name": "Alarm"
+      },
+      "running": {
+        "name": "Running"
+      },
+      "ngrok_online": {
+        "name": "Ngrok online"
+      },
+      "summer_mode_online": {
+        "name": "Summer mode online"
+      },
+      "winter_mode_online": {
+        "name": "Winter mode online"
+      }
+    },
+    "number": {
+      "temperature_min": {
+        "name": "Minimum temperature"
+      },
+      "temperature_max": {
+        "name": "Maximum temperature"
+      }
+    },
+    "sensor": {
+      "indoor_temperature": {
+        "name": "Indoor temperature"
+      },
+      "indoor_humidity": {
+        "name": "Indoor humidity"
+      },
+      "outdoor_temperature": {
+        "name": "Outdoor temperature"
+      },
+      "indoor_supply_temperature": {
+        "name": "Indoor supply temperature"
+      },
+      "indoor_return_temperature": {
+        "name": "Indoor return temperature"
+      },
+      "outdoor_supply_temperature": {
+        "name": "Outdoor supply temperature"
+      },
+      "outdoor_return_temperature": {
+        "name": "Outdoor return temperature"
+      },
+      "dhw_temperature": {
+        "name": "DHW temperature"
+      },
+      "circuit_pressure": {
+        "name": "Circuit pressure"
+      },
+      "power_heating": {
+        "name": "Heating power"
+      },
+      "power_cooling": {
+        "name": "Cooling power"
+      },
+      "power_electric": {
+        "name": "Electric power"
+      },
+      "cop": {
+        "name": "COP"
+      },
+      "eer": {
+        "name": "EER"
+      },
+      "setpoint_dhw": {
+        "name": "DHW setpoint"
+      },
+      "setpoint_heating": {
+        "name": "Heating setpoint"
+      },
+      "setpoint_cooling": {
+        "name": "Cooling setpoint"
+      },
+      "compressor_rpm": {
+        "name": "Compressor RPM"
+      },
+      "bus_demand_dhw": {
+        "name": "Bus demand DHW"
+      },
+      "bus_demand_dg1": {
+        "name": "Bus demand DG1"
+      },
+      "bus_program": {
+        "name": "Bus program"
+      },
+      "bus_pump_on": {
+        "name": "Bus heat-pump ON"
+      },
+      "indoor_dew_point": {
+        "name": "Indoor dew point"
+      },
+      "aerothermal_state": {
+        "name": "Aerothermal state",
+        "state": {
+          "idle": "Idle",
+          "cooling": "Cooling",
+          "heating": "Heating",
+          "acs": "DHW",
+          "acs_heating_waiting": "DHW, heating waiting",
+          "acs_cooling_waiting": "DHW, cooling waiting",
+          "unknown": "Unknown"
+        }
+      },
+      "thermal_heat_total_daily": {
+        "name": "Heating thermal energy (today)"
+      },
+      "thermal_heat_total_total": {
+        "name": "Heating thermal energy"
+      },
+      "thermal_cool_total_daily": {
+        "name": "Cooling thermal energy (today)"
+      },
+      "thermal_cool_total_total": {
+        "name": "Cooling thermal energy"
+      },
+      "thermal_heat_heating_mode_daily": {
+        "name": "Thermal energy used for heating (today)"
+      },
+      "thermal_heat_heating_mode_total": {
+        "name": "Thermal energy used for heating"
+      },
+      "thermal_heat_acs_daily": {
+        "name": "Thermal energy used for DHW (today)"
+      },
+      "thermal_heat_acs_total": {
+        "name": "Thermal energy used for DHW"
+      },
+      "thermal_cool_cooling_mode_daily": {
+        "name": "Thermal energy used for cooling (today)"
+      },
+      "thermal_cool_cooling_mode_total": {
+        "name": "Thermal energy used for cooling"
+      },
+      "electric_total_daily": {
+        "name": "Electric energy (today)"
+      },
+      "electric_total_total": {
+        "name": "Electric energy"
+      },
+      "electric_heating_daily": {
+        "name": "Electric energy used for heating (today)"
+      },
+      "electric_heating_total": {
+        "name": "Electric energy used for heating"
+      },
+      "electric_cooling_daily": {
+        "name": "Electric energy used for cooling (today)"
+      },
+      "electric_cooling_total": {
+        "name": "Electric energy used for cooling"
+      },
+      "electric_acs_daily": {
+        "name": "Electric energy used for DHW (today)"
+      },
+      "electric_acs_total": {
+        "name": "Electric energy used for DHW"
+      },
+      "runtime_daily": {
+        "name": "Runtime (today)"
+      },
+      "runtime_total": {
+        "name": "Runtime"
+      }
+    },
+    "switch": {
+      "winter_mode": {
+        "name": "Winter mode"
+      },
+      "at_home": {
+        "name": "At home"
+      }
+    }
+  }
 }
