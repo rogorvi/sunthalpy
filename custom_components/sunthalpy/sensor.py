@@ -33,8 +33,7 @@ async def async_setup_entry(
     coordinator = entry.runtime_data.coordinator
     entities: list[SensorEntity] = []
     entities.extend(
-        SunthalpyValueSensor(coordinator, point)
-        for point in (*SENSORS, *CALC_SENSORS)
+        SunthalpyValueSensor(coordinator, point) for point in (*SENSORS, *CALC_SENSORS)
     )
     entities.extend(
         SunthalpyEnergySensor(coordinator, point) for point in ENERGY_SENSORS
@@ -139,9 +138,8 @@ class SunthalpyEnergySensor(SunthalpyEntity, SensorEntity):
             return None
         try:
             local_midnight = dt_util.start_of_local_day(
-                dt_util.parse_datetime(f"{iso_date}T00:00:00")
-                or dt_util.now(),
+                dt_util.parse_datetime(f"{iso_date}T00:00:00") or dt_util.now(),
             )
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
         return local_midnight

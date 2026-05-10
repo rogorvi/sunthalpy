@@ -31,9 +31,7 @@ async def async_setup_entry(
 ) -> None:
     """Register every number entity for this entry."""
     coordinator = entry.runtime_data.coordinator
-    async_add_entities(
-        SunthalpyNumber(coordinator, point) for point in NUMBERS
-    )
+    async_add_entities(SunthalpyNumber(coordinator, point) for point in NUMBERS)
 
 
 class SunthalpyNumber(SunthalpyEntity, NumberEntity):
@@ -68,7 +66,7 @@ class SunthalpyNumber(SunthalpyEntity, NumberEntity):
             return None
         try:
             return float(value)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
 
     async def async_set_native_value(self, value: float) -> None:
@@ -110,5 +108,5 @@ class SunthalpyNumber(SunthalpyEntity, NumberEntity):
             return None
         try:
             return float(value)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None

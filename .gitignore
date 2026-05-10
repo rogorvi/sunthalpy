@@ -19,3 +19,4 @@ config/*
 
 .venv/
 .python-version
+.devcontainer-lock.json

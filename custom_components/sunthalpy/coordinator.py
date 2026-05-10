@@ -297,7 +297,7 @@ class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return is_truthy(api_value) == pending_value
         try:
             return abs(float(api_value) - float(pending_value)) < 0.05  # noqa: PLR2004
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return str(api_value) == str(pending_value)
 
     # ------------------------------------------------------------------
@@ -311,7 +311,7 @@ class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return None
         try:
             return float(value)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
 
     def _sanitise(
@@ -449,12 +449,8 @@ class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Add ``increment`` (≥ 0) to both the total and daily accumulator."""
         if increment <= 0:
             return
-        self._energy_total[category] = (
-            self._energy_total.get(category, 0.0) + increment
-        )
-        self._energy_daily[category] = (
-            self._energy_daily.get(category, 0.0) + increment
-        )
+        self._energy_total[category] = self._energy_total.get(category, 0.0) + increment
+        self._energy_daily[category] = self._energy_daily.get(category, 0.0) + increment
 
     def _integrate(
         self,
@@ -556,7 +552,7 @@ class SunthalpyDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return 0.0
         try:
             num = float(value)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return 0.0
         if num < 0 or num > ceiling:
             return 0.0

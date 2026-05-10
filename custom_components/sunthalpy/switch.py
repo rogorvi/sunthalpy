@@ -25,9 +25,7 @@ async def async_setup_entry(
 ) -> None:
     """Register every switch for this entry."""
     coordinator = entry.runtime_data.coordinator
-    async_add_entities(
-        SunthalpySwitch(coordinator, point) for point in SWITCHES
-    )
+    async_add_entities(SunthalpySwitch(coordinator, point) for point in SWITCHES)
 
 
 class SunthalpySwitch(SunthalpyEntity, SwitchEntity):
